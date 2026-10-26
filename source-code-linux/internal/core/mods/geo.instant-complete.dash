@@ -1,0 +1,37 @@
+{
+  "schema": 2,
+  "targetSha256": "4eee06d5c2e2213b4ba2b1f6233dd426bbdd0e9b29d7c375e499516b6f8f69d5",
+  "format": "pe",
+  "arch": "amd64",
+  "status": "experimental / static-verified; gameplay test pending",
+  "id": "geo.instant-complete",
+  "name": "Instant Complete · C + G + D",
+  "description": "Arm this mod, then press C+G+D together. Requests the real ending path in levels with a standard end portal.",
+  "kind": "hotkey",
+  "guards": [
+    {
+      "rva": "0x503ea7",
+      "expectedHex": "48 8B 05 22 81 40 00"
+    },
+    {
+      "rva": "0x503eed",
+      "expectedHex": "48 89 B0 30 02 00 00"
+    },
+    {
+      "rva": "0x513e60",
+      "expectedHex": "48 89 5C 24 20 57 48 83 EC 20 48 8B F9 48 8B 89 20 33 00 00"
+    }
+  ],
+  "patches": [
+    {
+      "rva": "0x513eb7",
+      "expectedHex": "73",
+      "replacementHex": "EB"
+    },
+    {
+      "rva": "0x513ef1",
+      "expectedHex": "0F 82 1B 01 00 00",
+      "replacementHex": "90 90 90 90 90 90"
+    }
+  ]
+}

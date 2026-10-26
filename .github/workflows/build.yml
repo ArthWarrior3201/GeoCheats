@@ -1,0 +1,52 @@
+name: Build portable apps and Linux packages
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.24.9'}
+      - run: go test ./...
+        working-directory: source-code-windows
+      - run: go build -trimpath -ldflags='-s -w -H=windowsgui' -o ../GeoCheats-Windows.exe ./cmd/geocheats
+        working-directory: source-code-windows
+        env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
+      - uses: actions/upload-artifact@v4
+        with: {name: GeoCheats-Windows, path: GeoCheats-Windows.exe}
+  macos:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.24.9'}
+      - name: Build Mac applications
+        working-directory: source-code-macos
+        run: |
+          for arch in amd64 arm64; do
+            app="../macOS/$arch/GeoCheats.app/Contents"
+            mkdir -p "$app/MacOS"
+            GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "$app/MacOS/GeoCheats" ./cmd/geocheats
+            cp packaging/Info.plist "$app/Info.plist"
+            GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "../macOS/$arch/Dash" ./cmd/dash
+          done
+          cp MAC-SUPPORT.txt ../macOS/
+          cd ../macOS && zip -r ../GeoCheats-macOS.zip .
+      - uses: actions/upload-artifact@v4
+        with: {name: GeoCheats-macOS, path: GeoCheats-macOS.zip}
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.24.9'}
+      - run: sudo apt-get update && sudo apt-get install -y rpm
+      - run: go test ./... && go build -trimpath -ldflags='-s -w' -o GeoCheats ./cmd/geocheats && go build -trimpath -ldflags='-s -w' -o Dash ./cmd/dash
+        working-directory: source-code-linux
+        env: {CGO_ENABLED: '0'}
+      - run: bash packaging/build-linux.sh
+        working-directory: source-code-linux
+      - uses: actions/upload-artifact@v4
+        with: {name: GeoCheats-Linux, path: source-code-linux/GeoCheats-Linux.zip}

@@ -1,0 +1,135 @@
+GEOCHEATS / DASH MOD BUILDING GUIDE - v1
+
+START HERE
+GeoCheats is a local app that opens its controls in your existing browser.
+The binaries include their runtime. Users do not install Go, Python, Node,
+Geode, Scoop, or Visual Studio. Operating-system libraries and a browser are
+still required. Source builders need Go 1.24+. Build dependency purego is
+compiled into relevant platforms; it is not a separate user installation.
+
+Linking only inspects an installed executable and stores its path. It does
+not launch or modify the game. Connect attaches separately to a running game.
+Paths use the current account's configuration directory and Steam library
+discovery. No username or uploaded-file workspace path is embedded.
+
+CURRENT SUPPORT
+Windows AMD64: native process-memory backend and seven bundled recipes for
+the exact GD 2.2091 executable below. The earlier invincibility patch was
+confirmed by the user. New modes are experimental and need gameplay tests.
+Linux AMD64: Windows game under Proton/Wine, same executable fingerprint.
+Native Linux attachment depends on the user's existing ptrace permissions;
+GeoCheats does not weaken them. X11 global hotkeys require libX11 and an EWMH
+window manager; Wayland global hotkeys are unavailable. UI actions remain.
+macOS Intel/Apple Silicon: app, linking, inspection and Dash are built.
+An Intel Mach task-memory backend is implemented but untested on a Mac.
+NO native macOS game recipe is bundled: the Windows EXE cannot supply one.
+ARM64 code patching is blocked pending instruction-cache support. Universal
+Mach-O inspection is available; universal slice patching is not implemented.
+Do not claim all platforms have gameplay support based on compilation alone.
+
+PROJECT MAP
+cmd/geocheats: local app entrypoint.
+cmd/dash: authoring CLI.
+internal/app: token-authenticated loopback HTTP controls and embedded UI.
+internal/core/package.go: package schema, PE/Mach-O inspection and signatures.
+internal/core/session.go: transaction/restore engine and known-build effects.
+internal/core/memory_*.go: native OS process access.
+internal/core/mods: embedded distributable JSON recipes.
+
+USAGE
+Run the binary matching your OS/CPU; keep it running while playing.
+Link the installed executable, launch the game yourself if desired, Connect,
+then enable mods. All start OFF. Quit restores runtime patches. Closing the
+browser tab alone does not quit. Force-killing the app requires restarting
+the game to clear remaining patches. No game executable is edited on disk.
+
+MODS
+Invincibility: early return from player-death routine. Solid physics remain.
+High Jump: detects ordinary cube jump starts and boosts vertical velocity
+2.2 times. Does not claim every form has a jump-height boost.
+Super Fast / Super Slow: player movement speed x4 / x0.25, not global time.
+No Jump: changes the primary-input branch; pads/triggers still move players.
+Fly: holds vertical velocity at zero; W/Space/Up rises, S/Down descends.
+Flight UI hold buttons work without global key capture. Physics can still
+interact with this experimental effect. It does not imply invincibility.
+Instant Complete: arm it, press C+G+D simultaneously (or the UI action).
+For 500 ms it forces the game's normal end-portal comparisons to pass.
+The game then runs its ending sequence. Levels without a standard end portal
+are rejected; this is not a universal platformer-completion implementation.
+Conflicting vertical modes and conflicting speed modes cannot be combined.
+These mods do not block completion/achievement saving. Use offline practice.
+
+DASH COMMANDS
+dash inspect PATH_TO_GAME
+dash read PATH_TO_GAME 0x512390 29
+dash scan PATH_TO_GAME "48 8B C4 48 89 58 18 55"
+dash export-mods OUTPUT_DIRECTORY
+dash validate PATH_TO_GAME MOD.dash
+dash build --game PATH_TO_GAME --recipe recipe.json --out MOD.dash
+dash make --game PATH_TO_GAME --id author.name --name "Name" --rva 0x1234
+          --expected "AA BB" --replace "CC DD" --out MOD.dash
+Quote file paths with spaces. Dash refuses to overwrite existing outputs.
+Dash does not find function meaning automatically. Scan returns candidates,
+not verified hooks. Inspect/disassemble and test behavior before publishing.
+
+SCHEMA 2
+A .dash is UTF-8 JSON. Required fields: schema=2, id, name, description,
+targetSha256 (64 hex digits), format (pe or macho), arch (amd64 or arm64),
+kind (patch, field or hotkey), status. Optional group defines conflicts.
+guards: array of {rva:"0xHEX", expectedHex:"AA BB ..."}.
+patches: array of {rva:"0xHEX", expectedHex:"AA",replacementHex:"BB"}.
+All RVAs are hexadecimal module-relative virtual addresses, not file offsets.
+PE module base is ASLR-adjusted. Thin Mach-O offsets are relative to __TEXT.
+Patch expected/replacement byte lengths must match, from 1 to 256 bytes.
+Guards are 4 to 256 bytes. Fingerprints must match the exact executable.
+Recipe targetSha256="AUTO" is accepted by Dash build only: it replaces AUTO
+with the inspected hash after verifying expected bytes. This does NOT prove
+that the recipe has correct function semantics or gameplay compatibility.
+
+For field kind: effect is speed, high-jump or fly; speed factor is 0.1..5.
+Field effects currently require the exact built-in Windows pointer profile.
+Do not point these recipes at arbitrary versions or native Mac game images.
+Hotkey kind uses patches temporarily; this release's trigger handler is
+specifically the known Windows end-portal profile, not a general script API.
+Recipes contain data, not DLLs or Geode packages. Legacy schema 1 is not
+accepted by this new engine; recreate it using schema 2 or bundled recipes.
+
+VERIFIED WINDOWS PROFILE
+SHA256 4eee06d5c2e2213b4ba2b1f6233dd426bbdd0e9b29d7c375e499516b6f8f69d5
+GameManager global pointer RVA 0x90bfd0; PlayLayer field +0x230.
+PlayLayer vtable RVA 0x7d59b8; PlayerObject vtable RVA 0x7d47c8.
+Players: PlayLayer +0xdb8 and +0xdc0.
+Player vertical velocity: double +0x9a8. Speed: float +0x9fc.
+Ship..spider mode flags +0x9c0..0x9c5, gravity inversion +0x9c7,
+ground flag +0x9c9. Death handler RVA 0x512390, first byte 48 -> C3.
+Primary input comparison immediate RVA 0x4f625d, 01 -> 7F.
+End-check branch RVA 0x513eb7, 73 -> EB; reverse comparison RVA
+0x513ef1, 0F821B010000 -> 909090909090. End portal field +0x3320;
+ending-started flag +0x3a28. These offsets are specific to this exact image.
+
+AUTHOR WORKFLOW
+1. Obtain the target's own executable and inspect it with Dash.
+2. Identify functions/fields with a disassembler; retain evidence and original
+   bytes. Respect calling conventions, ASLR and instruction boundaries.
+3. Write a patch recipe with exact bytes and sufficient independent guards.
+4. Run Dash build and validate. Test with a disposable/offline game session.
+5. Check enabled behavior, OFF restoration, normal exit, forced game exit,
+   level restart, dual players, mode changes, portals and mod conflicts.
+6. Test the actual OS backend. A cross-build is not a runtime test.
+7. Publish only truthful compatibility/test status. Future updates require
+   analysis again. Do not guess offsets or wildcard the executable hash.
+
+BUILD / GITHUB
+go test ./...
+go build -o GeoCheats ./cmd/geocheats
+go build -o Dash ./cmd/dash
+CGO_ENABLED=0 is supported. GOOS/GOARCH choose a cross-compilation target.
+See .github/workflows/build.yml for cross-platform build artifacts.
+No repository is created or uploaded automatically by this source package.
+
+LIMITATIONS / HANDOFF
+The native Mac executable has not been supplied. Native Mac mod recipes and
+ARM64 cache synchronization are outstanding. Backend OS permission failures
+are surfaced, not bypassed. Linux/Wayland keys require UI controls.
+Browser UI and native memory APIs need platform testing. The game EXE must
+never be committed or redistributed in the repository.

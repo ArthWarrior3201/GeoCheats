@@ -1,0 +1,11 @@
+Package: geocheats
+Version: 1.0.0
+Section: games
+Priority: optional
+Architecture: amd64
+Maintainer: GeoCheats contributors
+Depends: libc6 (>= 2.34), xdg-utils
+Recommends: libx11-6
+Description: Local Geometry Dash mod controller and Dash authoring tool
+ Controls open in the installed browser. Gameplay targets Windows GD under
+ Proton/Wine; process access depends on existing OS permissions.

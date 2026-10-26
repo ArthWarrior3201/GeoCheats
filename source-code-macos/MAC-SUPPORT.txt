@@ -1,0 +1,19 @@
+GeoCheats v1 - Native Mac support status
+
+The Mac application builds and supports game linking and file inspection.
+The current bundled mod recipes were derived from a Windows executable.
+Native Mac mod recipes cannot be completed from that Windows file.
+
+To provide the required Mac executable:
+1. On your Mac, open Steam > Library > Geometry Dash.
+2. Use Manage > Browse local files.
+3. Right-click Geometry Dash.app and choose Show Package Contents.
+4. Open Contents > MacOS.
+5. Upload the Geometry Dash executable from that folder to this conversation.
+   If the upload rejects a file without an extension, compress that file into
+   a ZIP and upload the ZIP. Do not modify the original installed game.
+
+This enables analysis of the native Mach-O functions and signatures. Actual
+Mac testing is still necessary, and macOS may restrict task-memory access.
+Native ARM64 code patching additionally needs instruction-cache support.
+No Mac gameplay compatibility is claimed before those steps are completed.

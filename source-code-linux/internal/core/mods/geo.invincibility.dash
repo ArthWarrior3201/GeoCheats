@@ -1,0 +1,24 @@
+{
+  "schema": 2,
+  "targetSha256": "4eee06d5c2e2213b4ba2b1f6233dd426bbdd0e9b29d7c375e499516b6f8f69d5",
+  "format": "pe",
+  "arch": "amd64",
+  "status": "user-confirmed on uploaded GD 2.2091 build",
+  "id": "geo.invincibility",
+  "name": "Invincibility",
+  "description": "Survive ordinary hazard deaths. Does not remove all solid-block physics.",
+  "kind": "patch",
+  "guards": [
+    {
+      "rva": "0x512390",
+      "expectedHex": "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 88 48 81 EC 40 01 00 00"
+    }
+  ],
+  "patches": [
+    {
+      "rva": "0x512390",
+      "expectedHex": "48",
+      "replacementHex": "C3"
+    }
+  ]
+}
