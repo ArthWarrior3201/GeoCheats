@@ -22,7 +22,10 @@ GeoCheats does not weaken them. X11 global hotkeys require libX11 and an EWMH
 window manager; Wayland global hotkeys are unavailable. UI actions remain.
 macOS Intel/Apple Silicon: app, linking, inspection and Dash are built.
 An Intel Mach task-memory backend is implemented but untested on a Mac.
-NO native macOS game recipe is bundled: the Windows EXE cannot supply one.
+The seven bundled recipes target Windows/Proton, not native Mac. An experimental
+Intel Mac invincibility recipe is generated locally when the exact death-handler
+symbol and supported frame prologue exist in the linked game's symbol table.
+Missing symbols/prologues are refused. Other six modes need native Mac profiles.
 ARM64 code patching is blocked pending instruction-cache support. Universal
 Mach-O inspection is available; universal slice patching is not implemented.
 Do not claim all platforms have gameplay support based on compilation alone.
@@ -39,9 +42,43 @@ internal/core/mods: embedded distributable JSON recipes.
 USAGE
 Run the binary matching your OS/CPU; keep it running while playing.
 Link the installed executable, launch the game yourself if desired, Connect,
-then enable mods. All start OFF. Quit restores runtime patches. Closing the
-browser tab alone does not quit. Force-killing the app requires restarting
-the game to clear remaining patches. No game executable is edited on disk.
+then enable mods. Switches start OFF only on a fresh profile, then remain saved
+until disabled. You may enable compatible switches while the game is closed;
+the controller reconnects every two seconds and restores saved choices. Closing
+the browser tab leaves it running; reopening GeoCheats reuses the same process.
+Quit restores runtime patches but remembers switches for next launch/login.
+On first enable, Start GeoCheats at login is installed and can be disabled in
+the UI. Keep the executable/app at a stable path. No game file is edited on disk.
+
+PERSISTENCE / CRASH RECOVERY
+settings.json and settings.backup.json in the current account's GeoCheats config
+directory store enabled ID->executable SHA-256 and login-start preferences.
+Each copy is atomically replaced; a damaged primary recovers from its backup.
+Missing/different mod hashes are never applied to a newly updated game.
+Restore & disconnect pauses automatic connection until Connect or a switch change.
+User login entries: Windows HKCU Run/GeoCheats; macOS user LaunchAgents/
+io.geocheats.controller.plist; Linux XDG autostart/geocheats.desktop. They run
+--background without opening a browser and are removable. No driver is installed.
+Existing controllers are protected by an OS lock/mutex and reopen their local UI.
+
+Resume verifies exact disk hashes, guards, original/replacement bytes and overlap
+before adopting a fully applied remembered code patch after a crash. Partial or
+foreign patches are refused. Recovered completion gates are restored immediately;
+the completion switch only rearms the hotkey. Speed baselines are saved before
+write, then reconciled on matching PID/base/hash and live layer/player/value
+checks, avoiding a second multiplication after controller restart. Restart the
+game if any recovery check fails. Physics modes still need the controller alive.
+No software can preserve preferences after its settings are deleted, or keep
+running after the OS stops it without another launch. Login entries resume next
+session; they are not a promise of unattended recovery from every crash/repair.
+
+EXPERIMENTAL INTEL MAC DISCOVERY
+Dash mac-profile GAME OUT.dash reads the local Mach-O symbol table. Required
+symbol: __ZN9PlayLayer13destroyPlayerEP12PlayerObjectP10GameObject. It must uniquely
+resolve inside __text, with Intel entry 55 48 89 e5. The recipe changes 55 to c3,
+guards the following 15 bytes and pins the whole executable SHA-256. No public
+address is guessed, no Geode runtime is loaded and no ARM64 patch is emitted.
+Only synthetic fixture tests pass today; real native Mac testing remains needed.
 
 MODS
 Invincibility: early return from player-death routine. Solid physics remain.
@@ -128,8 +165,9 @@ See .github/workflows/build.yml for cross-platform build artifacts.
 No repository is created or uploaded automatically by this source package.
 
 LIMITATIONS / HANDOFF
-The native Mac executable has not been supplied. Native Mac mod recipes and
-ARM64 cache synchronization are outstanding. Backend OS permission failures
+The native Mac executable has not been analyzed here. Experimental Intel symbol
+discovery is available; native field profiles, universal game slices and ARM64
+cache synchronization are outstanding. Backend OS permission failures
 are surfaced, not bypassed. Linux/Wayland keys require UI controls.
 Browser UI and native memory APIs need platform testing. The game EXE must
 never be committed or redistributed in the repository.

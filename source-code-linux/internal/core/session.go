@@ -24,13 +24,14 @@ type playerState struct {
 	boosted    time.Time
 }
 type Session struct {
-	Mem     Memory
-	Image   Image
-	Active  map[string]Package
-	changes map[string][]applied
-	players map[uint64]*playerState
-	Pending *time.Timer
-	flight  int
+	Mem          Memory
+	Image        Image
+	Active       map[string]Package
+	changes      map[string][]applied
+	players      map[uint64]*playerState
+	Pending      *time.Timer
+	flight       int
+	SpeedJournal func([]SpeedRecord) error
 }
 
 func NewSession(m Memory, im Image) *Session {
@@ -48,6 +49,9 @@ func (s *Session) Check(p Package) error {
 	}
 	if s.Image.SHA256 != p.Target {
 		return errors.New("package fingerprint differs from the linked game")
+	}
+	if s.Image.Format != p.Format || s.Image.Arch != p.Arch {
+		return errors.New("package format or CPU differs from the linked game")
 	}
 	info := s.Mem.Info()
 	for _, g := range p.Guards {
@@ -249,6 +253,13 @@ func (s *Session) restoreSpeed() error {
 		s.players = map[uint64]*playerState{}
 		return nil
 	}
+	owned := false
+	for _, state := range s.players {
+		owned = owned || state.speedOwned
+	}
+	if !owned {
+		return nil
+	}
 	layer, e := s.layer()
 	if e != nil {
 		return e
@@ -276,7 +287,7 @@ func (s *Session) restoreSpeed() error {
 		}
 		state.speedOwned = false
 	}
-	return nil
+	return s.saveSpeeds()
 }
 func (s *Session) SetFlight(direction int) {
 	if direction >= -1 && direction <= 1 {
@@ -352,6 +363,7 @@ func (s *Session) Tick() error {
 		for _, p := range s.Active {
 			switch p.Effect {
 			case "speed":
+				previous := *state
 				if !state.speedOwned || speed != state.written {
 					state.speed = speed
 				}
@@ -363,6 +375,12 @@ func (s *Session) Tick() error {
 				binary.LittleEndian.PutUint32(out, math.Float32bits(wanted))
 				state.speedOwned = true
 				state.written = wanted
+				if !previous.speedOwned || previous.written != wanted || previous.speed != state.speed {
+					if e = s.saveSpeeds(); e != nil {
+						*state = previous
+						return e
+					}
+				}
 				if e = s.Mem.Write(ptr+0x9fc, out); e != nil {
 					return e
 				}

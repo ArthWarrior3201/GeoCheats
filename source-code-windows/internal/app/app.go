@@ -35,6 +35,11 @@ type controller struct {
 	mods                map[string]core.Package
 	triggerUntil        time.Time
 	chord               bool
+	enabled             map[string]string
+	loginStart          bool
+	loginConfigured     bool
+	suspended           bool
+	nextConnect         time.Time
 }
 type request struct {
 	Path      string          `json:"path"`
@@ -136,6 +141,8 @@ func (c *controller) load() {
 			c.image = &im
 		}
 	}
+	c.loadSettings()
+	c.prepareMacMod()
 }
 func (c *controller) state() map[string]any {
 	mods := []map[string]any{}
@@ -144,14 +151,14 @@ func (c *controller) state() map[string]any {
 		if c.session != nil {
 			_, on = c.session.Active[p.ID]
 		}
-		mods = append(mods, map[string]any{"package": p, "on": on, "compatible": c.image != nil && c.image.SHA256 == p.Target})
+		mods = append(mods, map[string]any{"package": p, "on": on, "remembered": c.enabled[p.ID] == p.Target, "compatible": c.image != nil && c.image.SHA256 == p.Target})
 	}
 	connected := c.session != nil && c.session.Mem.Alive()
 	pid := 0
 	if connected {
 		pid = c.session.Mem.Info().PID
 	}
-	return map[string]any{"name": "GeoCheats", "version": "1.0.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable()}
+	return map[string]any{"name": "GeoCheats", "version": "1.1.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable(), "loginStart": c.loginStart}
 }
 func (c *controller) action(action string, r request) error {
 	switch action {
@@ -178,6 +185,7 @@ func (c *controller) action(action string, r request) error {
 		}
 		c.path = p
 		c.image = &im
+		c.prepareMacMod()
 		c.message = "Linked while closed or running. Connect is a separate step."
 	case "launch":
 		if c.image == nil {
@@ -185,6 +193,7 @@ func (c *controller) action(action string, r request) error {
 		}
 		return openURL("steam://rungameid/322170")
 	case "connect":
+		c.suspended = false
 		if c.image == nil {
 			return errors.New("link the game first")
 		}
@@ -219,7 +228,13 @@ func (c *controller) action(action string, r request) error {
 			return e
 		}
 		c.session = core.NewSession(mem, im)
-		c.message = "Connected. All mods start OFF."
+		if e := c.sessionJournal(); e != nil {
+			_ = mem.Close()
+			c.session = nil
+			return e
+		}
+		c.message = "Connected. Restoring remembered switches."
+		c.restoreEnabled()
 	case "disconnect":
 		if c.session != nil {
 			if e := c.session.Close(); e != nil {
@@ -227,29 +242,24 @@ func (c *controller) action(action string, r request) error {
 			}
 			c.session = nil
 		}
-		c.message = "Disconnected and runtime patches restored."
+		c.suspended = true
+		c.message = "Disconnected and runtime patches restored. Saved switches retained; Connect resumes them."
 	case "toggle":
-		if c.session == nil {
-			return errors.New("connect to the running game first")
-		}
-		p, ok := c.mods[r.ID]
-		if !ok {
-			return errors.New("unknown mod")
-		}
-		var e error
-		if r.Enabled {
-			e = c.session.Enable(p)
-		} else {
-			e = c.session.Disable(p.ID)
-		}
-		if e != nil {
+		return c.setEnabled(r.ID, r.Enabled)
+	case "login-start":
+		if e := configureLogin(r.Enabled); e != nil {
 			return e
 		}
-		c.message = p.Name + map[bool]string{true: " ON", false: " OFF"}[r.Enabled]
+		c.loginStart = r.Enabled
+		c.loginConfigured = true
+		return c.saveSettings()
 	case "import":
 		p, e := core.Decode(r.Package)
 		if e != nil {
 			return e
+		}
+		if c.enabled[p.ID] != "" {
+			return errors.New("turn this remembered mod off before replacing it")
 		}
 		if c.session != nil {
 			if _, ok := c.session.Active[p.ID]; ok {
@@ -302,7 +312,27 @@ func openURL(url string) error {
 }
 func Run() {
 	c := &controller{root: dataRoot(), message: "Link the installed game first. No Geode or separate runtime needed."}
+	background := len(os.Args) > 1 && os.Args[1] == "--background"
+	unlock, lockErr := instanceLock(c.root)
+	if errors.Is(lockErr, errAlreadyRunning) {
+		for attempt := 0; attempt < 10; attempt++ {
+			if reuseRunning(c.root, background) {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		fmt.Println("GeoCheats is already running; its control window is starting or busy.")
+		return
+	}
+	if lockErr != nil {
+		fmt.Println(lockErr)
+		return
+	}
+	defer unlock()
 	c.load()
+	if reuseRunning(c.root, background) {
+		return
+	}
 	random := make([]byte, 24)
 	if _, e := rand.Read(random); e != nil {
 		fmt.Println(e)
@@ -316,6 +346,13 @@ func Run() {
 	}
 	address := "http://" + listener.Addr().String()
 	url := address + "/" + token + "/"
+	instancePath := filepath.Join(c.root, "running.json")
+	if e := atomicFile(instancePath, []byte(url)); e != nil {
+		fmt.Println(e)
+		_ = listener.Close()
+		return
+	}
+	defer os.Remove(instancePath)
 	mux := http.NewServeMux()
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -368,7 +405,7 @@ func Run() {
 				}
 				c.session = nil
 			}
-			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Closed; patches restored."})
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Controller stopped; runtime patches restored. Saved switches remain for next launch/login."})
 			go func() { time.Sleep(100 * time.Millisecond); _ = server.Shutdown(context.Background()) }()
 			return
 		}
@@ -391,6 +428,7 @@ func Run() {
 				return
 			case <-ticker.C:
 				c.mu.Lock()
+				c.maintain(time.Now())
 				if s := c.session; s != nil {
 					chord, flight := core.PlatformKeys(s.Mem.Info().PID)
 					if core.GlobalKeysAvailable() {
@@ -439,8 +477,10 @@ func Run() {
 		}
 	}()
 	fmt.Println("GeoCheats:", url)
-	if e = openURL(url); e != nil {
-		fmt.Println("Open this URL in your browser:", url)
+	if !background {
+		if e = openURL(url); e != nil {
+			fmt.Println("Open this URL in your browser:", url)
+		}
 	}
 	if e = server.Serve(listener); e != nil && e != http.ErrServerClosed {
 		fmt.Println(e)

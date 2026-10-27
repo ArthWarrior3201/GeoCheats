@@ -10,7 +10,13 @@ Source and GitHub Pages download page for GeoCheats and the **Dash** mod tool.
 ## Compatibility
 
 Windows GD 2.2091 invincibility was user-confirmed. Other modes remain experimental.
-Linux gameplay uses the **Windows game under Proton/Wine**, subject to existing process-access permissions. Native macOS game recipes are **not complete**: the supplied Mac game ZIPs failed transfer and could not be analyzed. The Mac app/backend source is provided but this is not verified Mac gameplay support. Native ARM64 code patching is blocked.
+Linux gameplay uses the **Windows game under Proton/Wine**, subject to existing process-access permissions. Native macOS has an **experimental Intel invincibility discovery path**: link the installed game and GeoCheats looks for its exact named death-handler symbol and a supported entry prologue. No Windows addresses are reused. Stripped, universal, and native ARM64 game binaries are refused; the other six modes still require native Mac profiles. No real Mac gameplay has been verified.
+
+## Remembered mods
+
+Switches are saved per executable fingerprint and stay remembered until disabled. GeoCheats reconnects to the linked game automatically and restores remembered modes. Closing the browser leaves the controller running; reopening the app reuses that controller. On first enable, a removable **Start GeoCheats at login** entry is configured; the control window lets you disable it. Keep portable binaries or the Mac app in a stable location.
+
+Quit restores live patches and stops the controller, retaining preferences for the next launch/login. Recovery checks recognized code patches and saved speed baselines after a controller crash. Preferences have an atomic backup. This does not promise survival of deleted app data, OS permission changes, game updates, or a stopped controller; field modes require the controller running. Linux gameplay and native Mac memory access still need real-device testing.
 
 ## Releases and Pages
 

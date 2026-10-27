@@ -25,6 +25,7 @@ func help() {
   dash make --game GAME --id author.mod --name "Name" --rva 0x1234
             --expected "48 89 ..." --replace "C3 90 ..." --out MOD.dash
   dash export-mods DIRECTORY     Export all seven built-in recipes
+  dash mac-profile GAME OUT.dash Discover experimental Intel Mac invincibility
 
 Dash never guesses addresses and never changes the game executable.
 Read mod_building_guide.txt before making a recipe.
@@ -37,6 +38,19 @@ func main() {
 	}
 	args := os.Args[2:]
 	switch os.Args[1] {
+	case "mac-profile":
+		if len(args) != 2 {
+			fail(errors.New("usage: dash mac-profile GAME OUT.dash"))
+		}
+		p, e := core.MacInvincibility(args[0])
+		if e != nil {
+			fail(e)
+		}
+		if e = core.VerifyFile(p, args[0]); e != nil {
+			fail(e)
+		}
+		writePackage(args[1], p)
+		fmt.Println("Created exact-file Intel Mac recipe. Gameplay and process permissions remain unverified.")
 	case "inspect":
 		if len(args) != 1 {
 			fail(errors.New("usage: dash inspect GAME"))

@@ -1,10 +1,38 @@
 GeoCheats v1 - Native Mac support status
 
 The Mac application builds and supports game linking and file inspection.
-The current bundled mod recipes were derived from a Windows executable.
-Native Mac mod recipes cannot be completed from that Windows file.
+The seven bundled recipes were derived from a Windows executable and are not
+used against a native Mac game. The Mac controller now tries a local, exact-symbol
+discovery route for experimental Intel invincibility, without requiring a game
+upload. It looks for PlayLayer::destroyPlayer(PlayerObject*, GameObject*) in the
+thin Intel Mach-O symbol table, checks its executable section and frame prologue,
+and creates an exact SHA-256 recipe with live guards. Missing/ambiguous symbols,
+different prologues and unsupported binaries produce a useful error, not a guess.
 
-To provide the required Mac executable:
+You can export that experimental recipe with:
+  ./Dash mac-profile "/path/to/Geometry Dash.app/Contents/MacOS/Geometry Dash" mac-invincibility.dash
+
+This has synthetic-file tests, not a real Mac gameplay test. Native ARM64 game
+instruction-cache synchronization and universal game slice support remain blocked.
+An Apple Silicon GeoCheats app can attempt a thin Intel game's recipe; this does
+not make ARM64 game code compatible. Native high jump, speed, no jump, flight and
+completion still require independently verified Mac profiles.
+
+Windows uses PE images and Windows process APIs; macOS uses Mach-O/dyld images
+and Mach task APIs. Memory layouts and instruction sets differ. No kernel driver
+or protocol conversion makes Windows RVAs valid on macOS. Apple's task_for_pid
+policy can deny access even when a recipe is correct. This app does not bypass
+SIP or modify game entitlements/signatures. See:
+https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.cs.debugger
+https://github.com/geode-sdk/bindings
+
+Switches are remembered until disabled, with automatic reconnection and a
+removable user LaunchAgent login item. Move GeoCheats.app into its final location
+before enabling mods. Quit restores runtime patches and retains preferences;
+closing the browser leaves the controller running. A stopped controller cannot
+keep per-frame effects running. Deleting app settings removes saved switches.
+
+For future analysis of unsupported native modes, the useful game file is:
 1. On your Mac, open Steam > Library > Geometry Dash.
 2. Use Manage > Browse local files.
 3. Right-click Geometry Dash.app and choose Show Package Contents.
@@ -16,4 +44,4 @@ To provide the required Mac executable:
 This enables analysis of the native Mach-O functions and signatures. Actual
 Mac testing is still necessary, and macOS may restrict task-memory access.
 Native ARM64 code patching additionally needs instruction-cache support.
-No Mac gameplay compatibility is claimed before those steps are completed.
+No real Mac gameplay compatibility is claimed based on compilation or synthetic tests.

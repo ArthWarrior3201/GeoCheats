@@ -39,14 +39,19 @@ func initMac() error {
 			macErr = e
 			return
 		}
+		procLib, e := purego.Dlopen("/usr/lib/libproc.dylib", purego.RTLD_NOW|purego.RTLD_GLOBAL)
+		if e != nil {
+			macErr = e
+			return
+		}
 		port, e := purego.Dlsym(lib, "mach_task_self_")
 		if e != nil {
 			macErr = e
 			return
 		}
 		taskSelf = *(*uint32)(unsafe.Pointer(port))
-		purego.RegisterLibFunc(&listPIDs, lib, "proc_listpids")
-		purego.RegisterLibFunc(&pidPath, lib, "proc_pidpath")
+		purego.RegisterLibFunc(&listPIDs, procLib, "proc_listpids")
+		purego.RegisterLibFunc(&pidPath, procLib, "proc_pidpath")
 		purego.RegisterLibFunc(&getTask, lib, "task_for_pid")
 		purego.RegisterLibFunc(&readVM, lib, "mach_vm_read_overwrite")
 		purego.RegisterLibFunc(&writeVM, lib, "mach_vm_write")
@@ -79,6 +84,9 @@ func FindProcesses(path string) ([]ProcessInfo, error) {
 	pids := make([]int32, size/4+1024)
 	n := listPIDs(1, 0, uintptr(unsafe.Pointer(&pids[0])), int32(len(pids)*4))
 	runtime.KeepAlive(pids)
+	if n < 0 || int(n)/4 > len(pids) {
+		return nil, errors.New("proc_listpids returned an invalid process count")
+	}
 	var result []ProcessInfo
 	for _, pid := range pids[:int(n)/4] {
 		if pid > 0 && processPath(int(pid)) == path {
