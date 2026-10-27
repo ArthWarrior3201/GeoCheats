@@ -129,3 +129,26 @@ func TestSteamLibraryManifestAndBothMacBundleNames(t *testing.T) {
 		t.Fatalf("expected both bundle variants in additional Steam library, got %v", found)
 	}
 }
+
+func TestRejectedToggleReturnsToSavedState(t *testing.T) {
+	a := test.NewApp()
+	defer a.Quit()
+	w := a.NewWindow("GeoCheats")
+	s, e := newService(t.TempDir(), false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	s.c.image = &core.Image{SHA256: core.KnownHash, Format: "pe", Arch: "amd64"}
+	s.c.loginConfigured = true
+	s.c.enabled["geo.super-fast"] = core.KnownHash
+	ui := buildControls(w, s, nil)
+	w.SetContent(ui.root)
+	ui.checks["geo.super-slow"].SetChecked(true)
+	if ui.checks["geo.super-slow"].Checked {
+		t.Fatal("a rejected toggle still looked enabled")
+	}
+	if s.c.enabled["geo.super-slow"] != "" {
+		t.Fatal("rejected preference was saved")
+	}
+}

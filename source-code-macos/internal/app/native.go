@@ -138,7 +138,13 @@ func (v *controls) render() {
 		m := mod
 		check := widget.NewCheck(m.Package.Name, nil)
 		check.SetChecked(m.Enabled)
-		check.OnChanged = func(on bool) { v.showError(v.service.Toggle(m.Package.ID, on)); v.render() }
+		check.OnChanged = func(on bool) {
+			if err := v.service.Toggle(m.Package.ID, on); err != nil {
+				v.signature = ""
+				v.showError(err)
+			}
+			v.render()
+		}
 		if !m.Compatible && !m.Enabled {
 			check.Disable()
 		}

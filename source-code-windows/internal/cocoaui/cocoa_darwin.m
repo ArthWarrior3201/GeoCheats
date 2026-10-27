@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include <stdlib.h>
+#include <string.h>
 extern char *gc_go_event(const char *,const char *);
 
 static NSDictionary *event(NSString *name,NSDictionary *input){
@@ -77,7 +78,7 @@ static NSButton *button(NSString *text,id target,SEL action){return [NSButton bu
 }
 - (NSMutableDictionary*)draft{NSMutableDictionary *data=[NSMutableDictionary new];for(NSString *key in self.fields)data[key]=self.fields[key].stringValue;return data;}
 - (void)choose:(id)sender{NSOpenPanel *panel=[NSOpenPanel openPanel];panel.canChooseFiles=YES;panel.canChooseDirectories=NO;panel.treatsFilePackagesAsDirectories=NO;panel.allowsMultipleSelection=NO;panel.title=@"Choose Geometry Dash";if([panel runModal]==NSModalResponseOK)[self apply:event(@"link",@{@"path":panel.URL.path})];}
-- (void)toggle:(NSSwitch*)sender{[self apply:event(@"toggle",@{@"id":sender.identifier,@"enabled":@(sender.state==NSControlStateValueOn)})];}
+- (void)toggle:(NSSwitch*)sender{NSDictionary *updated=event(@"toggle",@{@"id":sender.identifier,@"enabled":@(sender.state==NSControlStateValueOn)});if(updated[@"error"]){sender.state=sender.state==NSControlStateValueOn?NSControlStateValueOff:NSControlStateValueOn;[self alert:updated[@"error"]];return;}[self apply:updated];}
 - (void)login:(NSMenuItem*)sender{[self apply:event(@"login",@{@"enabled":@(sender.state!=NSControlStateValueOn)})];sender.state=[self.state[@"login"]boolValue]?NSControlStateValueOn:NSControlStateValueOff;}
 - (void)launch:(id)sender{[self apply:event(@"launch",@{})];}
 - (void)complete:(id)sender{[self apply:event(@"trigger",@{})];}
