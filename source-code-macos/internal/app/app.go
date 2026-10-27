@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"geocheats/internal/core"
+	"geocheats/internal/launchcheck"
 	"io"
 	"net"
 	"net/http"
@@ -24,7 +25,7 @@ import (
 	"time"
 )
 
-//go:embed ui.html
+//go:embed ui.html geocheats.png
 var assets embed.FS
 
 type controller struct {
@@ -158,7 +159,7 @@ func (c *controller) state() map[string]any {
 	if connected {
 		pid = c.session.Mem.Info().PID
 	}
-	return map[string]any{"name": "GeoCheats", "version": "1.1.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable(), "loginStart": c.loginStart}
+	return map[string]any{"name": "GeoCheats", "version": "1.2.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable(), "loginStart": c.loginStart}
 }
 func (c *controller) action(action string, r request) error {
 	switch action {
@@ -313,6 +314,17 @@ func openURL(url string) error {
 func Run() {
 	c := &controller{root: dataRoot(), message: "Link the installed game first. No Geode or separate runtime needed."}
 	background := len(os.Args) > 1 && os.Args[1] == "--background"
+	report := launchcheck.ReportPath(os.Args[1:])
+	if report != "" {
+		root, e := os.MkdirTemp("", "geocheats-launch-check-")
+		if e != nil {
+			fmt.Println(e)
+			return
+		}
+		defer os.RemoveAll(root)
+		c.root = root
+		background = true
+	}
 	unlock, lockErr := instanceLock(c.root)
 	if errors.Is(lockErr, errAlreadyRunning) {
 		for attempt := 0; attempt < 10; attempt++ {
@@ -364,6 +376,12 @@ func Run() {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
+		if r.URL.Path == "/"+token+"/icon.png" && r.Method == "GET" {
+			raw, _ := assets.ReadFile("geocheats.png")
+			w.Header().Set("Content-Type", "image/png")
+			_, _ = w.Write(raw)
+			return
+		}
 		if r.URL.Path == "/"+token+"/" && r.Method == "GET" {
 			raw, _ := assets.ReadFile("ui.html")
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -477,6 +495,9 @@ func Run() {
 		}
 	}()
 	fmt.Println("GeoCheats:", url)
+	if report != "" {
+		go launchcheck.Run(server, address, token, url, report, "GeoCheats")
+	}
 	if !background {
 		if e = openURL(url); e != nil {
 			fmt.Println("Open this URL in your browser:", url)

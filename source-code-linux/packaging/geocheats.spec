@@ -1,5 +1,5 @@
 Name: geocheats
-Version: 1.1.0
+Version: 1.2.0
 Release: 1%{?dist}
 Summary: Local Geometry Dash mod controller and Dash authoring tool
 License: MIT AND BSD-2-Clause AND BSD-3-Clause
@@ -20,5 +20,11 @@ tar -xzf %{SOURCE0} -C %{buildroot}
 %files
 /usr/bin/geocheats
 /usr/bin/geocheats-dash
+/usr/bin/geocheats-dash-builder
 /usr/share/applications/geocheats.desktop
+/usr/share/applications/dash.desktop
+/usr/share/icons/hicolor/256x256/apps/geocheats.png
+/usr/share/icons/hicolor/256x256/apps/geocheats-dash.png
+/usr/share/icons/hicolor/512x512/apps/geocheats.png
+/usr/share/icons/hicolor/512x512/apps/geocheats-dash.png
 %doc /usr/share/doc/geocheats/mod_building_guide.txt

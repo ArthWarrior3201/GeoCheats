@@ -25,3 +25,30 @@ The build workflow produces a portable Windows EXE, a macOS ZIP containing both 
 In repository Settings → Pages, select **Deploy from a branch**, **main**, **/(root)**. The download page will work after GitHub Pages is enabled. Only stable published releases count as `/releases/latest`; prereleases and drafts are excluded.
 
 No game executable or game bundle is included in this repository.
+
+## Branded desktop packages (v1.2)
+
+The supplied GeoCheats and Dash logos are included as real platform icons:
+macOS ICNS in each app's Resources/Info.plist, Windows multi-resolution ICO
+resources embedded in the EXEs, and Linux hicolor PNGs referenced by desktop
+launchers. Dash now has a graphical recipe builder; the CLI remains available.
+
+The Mac build runs on macOS, produces universal Intel/Apple Silicon
+`GeoCheats.app` and `Dash.app`, signs the complete bundles, and checks them with
+`codesign --verify --deep --strict`. CI opens both apps through LaunchServices,
+checks their local controls/icons, repeats checks after ZIP extraction, then
+creates/verifies/mounts a DMG and checks its app signatures. The downloadable
+`GeoCheats-macOS.zip` and `GeoCheats-macOS.dmg` contain both applications.
+
+Without Developer ID credentials, these are **ad-hoc signed, not Apple notarized**.
+This validates bundle integrity but does not grant default Gatekeeper trust.
+`SIGNING-STATUS.txt` inside the downloads states the actual signing mode. See
+`source-code-macos/packaging/SIGNING.md` for optional Developer ID/notarization.
+No security settings are disabled by the build or apps. Gameplay support is
+separate from app packaging and remains limited as described above.
+
+Build scripts: `source-code-windows/packaging/build-windows.sh` (windres + Go),
+`source-code-macos/packaging/build-macos.sh` (macOS + Go), and
+`source-code-linux/packaging/build-linux.sh` (Go binaries + dpkg/rpm). See the
+workflow for exact steps. `tools/generate-icons.py` regenerates platform icons
+from the supplied PNGs using Pillow; Pillow is only a source-build tool.

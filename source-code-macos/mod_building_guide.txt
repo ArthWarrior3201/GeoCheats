@@ -1,5 +1,22 @@
 GEOCHEATS / DASH MOD BUILDING GUIDE - v1
 
+DESKTOP PACKAGING UPDATE (1.2.0)
+Dash now includes a graphical recipe builder in addition to its original CLI.
+Both GeoCheats and Dash use the supplied logos in ICNS/ICO/Linux PNG formats.
+The GUI can inspect a game, generate a single-patch draft, verify a complete
+JSON recipe, discover the experimental Intel Mac profile, and download .dash.
+The CLI remains available for automated scripts and AI-driven authoring.
+Windows: Dash-Windows.exe is the GUI; Dash-CLI.exe is the CLI. EXE icons require
+packaging/build-windows.sh (windres generates linked .syso resources).
+macOS: GeoCheats.app and Dash.app are universal app bundles in ZIP and DMG.
+The CLI is Dash.app/Contents/Helpers/dash. packaging/build-macos.sh builds on
+macOS, signs the full bundles, validates signatures/icons, and launches both
+apps through LaunchServices before and after ZIP extraction. Without Developer
+ID secrets these are ad-hoc signed, not notarized; see packaging/SIGNING.md.
+Linux: geocheats-dash is the CLI; geocheats-dash-builder is the GUI. Both app
+launchers use registered hicolor icons. DEB/RPM package payloads are checked.
+Packaging checks do not extend native game compatibility or prove gameplay.
+
 START HERE
 GeoCheats is a local app that opens its controls in your existing browser.
 The binaries include their runtime. Users do not install Go, Python, Node,

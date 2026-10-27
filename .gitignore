@@ -1,0 +1,8 @@
+**/out/
+**/packages/
+**/*.syso
+**/__pycache__/
+source-code-*/GeoCheats
+source-code-*/Dash
+source-code-*/Dash-Builder
+source-code-*/*.zip

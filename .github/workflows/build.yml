@@ -1,4 +1,4 @@
-name: Build portable apps and Linux packages
+name: Build branded apps and verify native Mac bundles
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
@@ -6,62 +6,76 @@ jobs:
   windows:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: {go-version: '1.24.9'}
-      - run: go test ./...
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.9'
+          cache-dependency-path: source-code-windows/go.sum
+      - run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64-x86-64
+      - run: go test ./... && bash packaging/build-windows.sh
         working-directory: source-code-windows
-      - run: go build -trimpath -ldflags='-s -w -H=windowsgui' -o ../GeoCheats-Windows.exe ./cmd/geocheats
-        working-directory: source-code-windows
-        env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
-      - uses: actions/upload-artifact@v4
-        with: {name: GeoCheats-Windows, path: GeoCheats-Windows.exe}
-  macos:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: {go-version: '1.24.9'}
-      - run: go test ./...
-        working-directory: source-code-macos
-      - name: Build Mac applications
-        working-directory: source-code-macos
+      - name: Verify embedded Windows icons and version resources
         run: |
-          for arch in amd64 arm64; do
-            app="../macOS/$arch/GeoCheats.app/Contents"
-            mkdir -p "$app/MacOS"
-            GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "$app/MacOS/GeoCheats" ./cmd/geocheats
-            cp packaging/Info.plist "$app/Info.plist"
-            GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "../macOS/$arch/Dash" ./cmd/dash
-          done
-          cp MAC-SUPPORT.txt ../macOS/
-          cd ../macOS && zip -r ../GeoCheats-macOS.zip .
-      - uses: actions/upload-artifact@v4
-        with: {name: GeoCheats-macOS, path: GeoCheats-macOS.zip}
-  macos-native-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [macos-15-intel, macos-15]
-    runs-on: ${{ matrix.runner }}
+          python3 -m pip install pefile
+          python3 tools/check-windows-icons.py source-code-windows/out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: GeoCheats-Windows
+          path: source-code-windows/out/*
+  macos:
+    runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: {go-version: '1.24.9'}
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.9'
+          cache-dependency-path: source-code-macos/go.sum
       - run: go test ./...
+        working-directory: source-code-macos
+        env: {CGO_ENABLED: '0'}
+      - name: Build, sign, launch, archive and verify Mac apps and DMG
+        run: bash packaging/build-macos.sh
+        working-directory: source-code-macos
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: GeoCheats-macOS
+          path: source-code-macos/out/*
+  macos-intel-tests:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.9'
+          cache-dependency-path: source-code-macos/go.sum
+      - run: go test ./... && bash packaging/build-macos.sh
         working-directory: source-code-macos
         env: {CGO_ENABLED: '0'}
   linux:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: {go-version: '1.24.9'}
-      - run: sudo apt-get update && sudo apt-get install -y rpm
-      - run: go test ./... && go build -trimpath -ldflags='-s -w' -o GeoCheats ./cmd/geocheats && go build -trimpath -ldflags='-s -w' -o Dash ./cmd/dash
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.9'
+          cache-dependency-path: source-code-linux/go.sum
+      - run: sudo apt-get update && sudo apt-get install -y rpm desktop-file-utils
+      - name: Test and build Linux apps and CLI
+        run: |
+          go test ./...
+          go build -trimpath -ldflags='-s -w' -o GeoCheats ./cmd/geocheats
+          go build -trimpath -ldflags='-s -w' -o Dash ./cmd/dash
+          go build -trimpath -ldflags='-s -w' -o Dash-Builder ./cmd/dash-desktop
+          desktop-file-validate packaging/geocheats.desktop packaging/dash.desktop
+          bash packaging/build-linux.sh
+          python3 ../tools/check-linux-packages.py packages
         working-directory: source-code-linux
         env: {CGO_ENABLED: '0'}
-      - run: bash packaging/build-linux.sh
-        working-directory: source-code-linux
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: {name: GeoCheats-Linux, path: source-code-linux/GeoCheats-Linux.zip}
