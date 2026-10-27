@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Dash
-Comment=Build and validate GeoCheats .dash mods
-Exec=/usr/bin/geocheats-dash-builder
-Icon=geocheats-dash
-Terminal=false
-Categories=Development;Utility;

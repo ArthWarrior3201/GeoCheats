@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=GeoCheats
-Comment=Local Geometry Dash mod controller
-Exec=/usr/bin/geocheats
-Icon=geocheats
-Terminal=false
-Categories=Game;Utility;
