@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory(prefix='geocheats-launch-') as tmp:
         assert os.access(binary,os.X_OK),f'{binary} is not executable'
         assert icon.read_bytes().startswith(b'icns'),f'{icon} is not an ICNS file'
         subprocess.run(['plutil','-lint',str(app/'Contents/Info.plist')],check=True)
-        subprocess.run(['lipo','-verify_arch','x86_64','arm64',str(binary)],check=True)
+        subprocess.run(['lipo',str(binary),'-verify_arch','x86_64','arm64'],check=True)
         subprocess.run(['codesign','--verify','--deep','--strict','--verbose=2',str(app)],check=True)
         decoded=Path(tmp)/f'{name}.iconset'
         subprocess.run(['iconutil','--convert','iconset','--output',str(decoded),str(icon)],check=True)
@@ -23,5 +23,5 @@ with tempfile.TemporaryDirectory(prefix='geocheats-launch-') as tmp:
         result=json.loads(report.read_text());assert result.get('ok'),result
         print(f'{name}: native LaunchServices, signature, universal binary, ICNS, UI and server checks passed')
     helper=stage/'Dash.app/Contents/Helpers/dash'
-    subprocess.run(['lipo','-verify_arch','x86_64','arm64',str(helper)],check=True)
+    subprocess.run(['lipo',str(helper),'-verify_arch','x86_64','arm64'],check=True)
     subprocess.run([str(helper),'help'],check=True,stdout=subprocess.DEVNULL,timeout=15)
