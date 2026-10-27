@@ -38,7 +38,9 @@ Developer ID credentials are ad-hoc signed, not Apple-notarized.
 
 Source folders are self-contained. Build scripts and the GitHub Actions workflow
 compile native GUIs using Go 1.24+, Fyne 2.8.2, CGO and OS graphics libraries.
-Windows uses MinGW-w64, macOS Xcode command-line tools, and Linux GL/X11 headers.
+Windows uses MinGW-w64, macOS uses native AppKit/Cocoa with Xcode command-line
+tools, and Linux uses GL/X11/Wayland headers. The Mac front end does not use
+OpenGL or a browser renderer.
 Linux packages declare their OS graphics and Zenity file-dialog dependencies.
 No Geode, Python, Node, Go installation, or separate GUI runtime is required by
 end users. See mod_building_guide.txt and packaging scripts for exact commands.
