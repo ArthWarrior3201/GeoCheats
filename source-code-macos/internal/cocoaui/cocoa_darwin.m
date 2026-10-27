@@ -36,7 +36,10 @@ static NSButton *button(NSString *text,id target,SEL action){return [NSButton bu
     NSMenu *appmenu=[[NSMenu alloc]initWithTitle:self.name];application.submenu=appmenu;
     NSMenuItem *change=[[NSMenuItem alloc]initWithTitle:@"Change game…" action:@selector(choose:) keyEquivalent:@""];change.target=self;[appmenu addItem:change];
     if([self.name isEqual:@"GeoCheats"]){NSMenuItem *login=[[NSMenuItem alloc]initWithTitle:@"Start at login" action:@selector(login:) keyEquivalent:@""];login.target=self;login.state=[self.state[@"login"]boolValue]?NSControlStateValueOn:NSControlStateValueOff;[appmenu addItem:login];}
-    [appmenu addItem:NSMenuItem.separatorItem];NSMenuItem *quit=[[NSMenuItem alloc]initWithTitle:[@"Quit " stringByAppendingString:self.name] action:@selector(quit:) keyEquivalent:@"q"];quit.target=self;[appmenu addItem:quit];NSApp.mainMenu=menu;
+    [appmenu addItem:NSMenuItem.separatorItem];NSMenuItem *quit=[[NSMenuItem alloc]initWithTitle:[@"Quit " stringByAppendingString:self.name] action:@selector(quit:) keyEquivalent:@"q"];quit.target=self;[appmenu addItem:quit];
+    NSMenuItem *editRoot=[NSMenuItem new];[menu addItem:editRoot];NSMenu *edit=[[NSMenu alloc]initWithTitle:@"Edit"];editRoot.submenu=edit;
+    [edit addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"];[edit addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];[edit addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"];[edit addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+    NSApp.mainMenu=menu;
     self.window=[[NSWindow alloc]initWithContentRect:NSMakeRect(0,0,530,540) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskResizable backing:NSBackingStoreBuffered defer:NO];
     self.window.title=self.name;self.window.delegate=self;self.window.releasedWhenClosed=NO;[self.window center];
     NSStackView *root=[NSStackView stackViewWithViews:@[]];root.orientation=NSUserInterfaceLayoutOrientationVertical;root.alignment=NSLayoutAttributeLeading;root.spacing=18;root.edgeInsets=NSEdgeInsetsMake(20,20,20,20);root.translatesAutoresizingMaskIntoConstraints=NO;
