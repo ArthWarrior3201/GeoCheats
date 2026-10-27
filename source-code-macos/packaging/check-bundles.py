@@ -21,7 +21,8 @@ with tempfile.TemporaryDirectory(prefix='geocheats-launch-') as tmp:
         subprocess.run(['/usr/bin/open','-W','-n',str(app),'--args','--launch-check',str(report)],check=True,timeout=45)
         assert report.is_file(),f'{name} launched without producing its startup report'
         result=json.loads(report.read_text());assert result.get('ok'),result
-        print(f'{name}: native LaunchServices, signature, universal binary, ICNS, UI and server checks passed')
+        assert result.get('ui')=='native' and result.get('browser') is False,result
+        print(f'{name}: native LaunchServices/window, signature, universal binary, ICNS and rendered-controls checks passed')
     helper=stage/'Dash.app/Contents/Helpers/dash'
     subprocess.run(['lipo',str(helper),'-verify_arch','x86_64','arm64'],check=True)
     subprocess.run([str(helper),'help'],check=True,stdout=subprocess.DEVNULL,timeout=15)

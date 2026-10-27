@@ -5,13 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"geocheats/internal/core"
-	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -182,6 +178,10 @@ func (c *controller) maintain(now time.Time) {
 		return
 	}
 	if c.session == nil {
+		if list, e := core.FindProcesses(c.path); e == nil && len(list) == 0 {
+			c.message = "Waiting for Geometry Dash."
+			return
+		}
 		// Re-inspection in Connect rejects an updated game before opening its memory.
 		if e := c.action("connect", request{}); e != nil {
 			c.message = "Remembered switches waiting: " + e.Error()
@@ -199,11 +199,11 @@ func (c *controller) prepareMacMod() {
 	}
 	p, e := core.MacInvincibility(c.path)
 	if e != nil {
-		c.message = "Mac profile discovery: " + e.Error()
+		c.message = "This Mac game build needs a compatible mod profile."
 		return
 	}
 	c.mods[p.ID] = p
-	c.message = "Experimental Intel Mac invincibility discovered from this game's named symbol; gameplay unverified."
+	c.message = "Game linked."
 }
 
 type speedSnapshot struct {
@@ -236,37 +236,4 @@ func (c *controller) sessionJournal() error {
 		}
 	}
 	return s.SpeedJournal(nil)
-}
-
-func reuseRunning(root string, background bool) bool {
-	b, e := os.ReadFile(filepath.Join(root, "running.json"))
-	if e != nil {
-		return false
-	}
-	u, e := url.Parse(string(b))
-	if e != nil || u.Scheme != "http" || u.Hostname() != "127.0.0.1" || u.Port() == "" {
-		return false
-	}
-	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) != 1 || len(parts[0]) != 48 {
-		return false
-	}
-	req, _ := http.NewRequest("GET", "http://"+u.Host+"/api/state", nil)
-	req.Header.Set("X-GeoCheats-Token", parts[0])
-	client := http.Client{Timeout: time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	res, e := client.Do(req)
-	if e != nil {
-		return false
-	}
-	defer res.Body.Close()
-	var s struct {
-		Name string `json:"name"`
-	}
-	if res.StatusCode != 200 || json.NewDecoder(io.LimitReader(res.Body, 256*1024)).Decode(&s) != nil || s.Name != "GeoCheats" {
-		return false
-	}
-	if !background {
-		_ = openURL(u.String())
-	}
-	return true
 }

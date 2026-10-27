@@ -1,6 +1,23 @@
 GEOCHEATS / DASH MOD BUILDING GUIDE - v1
 
-DESKTOP PACKAGING UPDATE (1.2.0)
+LINKING AND SIMPLE UI
+A saved valid game link is reused on startup; otherwise Steam's standard install,
+appmanifest_322170.acf and libraryfolders.vdf are searched automatically. Both
+GeometryDash.app and Geometry Dash.app are recognized on macOS. The .app bundle's
+CFBundleExecutable is resolved with macOS plutil, including binary Info.plist.
+When no install is found, Choose file opens a native OS file chooser. Successful
+linking hides the chooser and shows the same controls as automatic linking.
+Linking and saving an enabled switch do not require a running game. The actual
+memory mod can take effect only after a compatible game process starts.
+The native windows contain no slogan, browser UI, WebView or local web server.
+The only HTTP client remaining is a one-time upgrade helper that can gracefully
+stop an older browser-based GeoCheats controller; it serves no network API.
+The Mac ZIP contains only GeoCheats.app and Dash.app. Helper CLI, icons, notices,
+compatibility details and signing status live inside Contents/Resources (documents/icons) and Contents/Helpers (CLI).
+Dash's main screen is a small patch form; Advanced JSON is optional.
+
+
+NATIVE DESKTOP UPDATE (1.3.0)
 Dash now includes a graphical recipe builder in addition to its original CLI.
 Both GeoCheats and Dash use the supplied logos in ICNS/ICO/Linux PNG formats.
 The GUI can inspect a game, generate a single-patch draft, verify a complete
@@ -18,10 +35,10 @@ launchers use registered hicolor icons. DEB/RPM package payloads are checked.
 Packaging checks do not extend native game compatibility or prove gameplay.
 
 START HERE
-GeoCheats is a local app that opens its controls in your existing browser.
+GeoCheats and Dash use native desktop windows, not browser or WebView controls.
 The binaries include their runtime. Users do not install Go, Python, Node,
-Geode, Scoop, or Visual Studio. Operating-system libraries and a browser are
-still required. Source builders need Go 1.24+. Build dependency purego is
+Geode or Scoop. Operating-system graphics libraries are still required.
+Source builders need Go 1.24+, CGO and a C compiler. Build dependency purego is
 compiled into relevant platforms; it is not a separate user installation.
 
 Linking only inspects an installed executable and stores its path. It does
@@ -51,7 +68,10 @@ Do not claim all platforms have gameplay support based on compilation alone.
 PROJECT MAP
 cmd/geocheats: local app entrypoint.
 cmd/dash: authoring CLI.
-internal/app: token-authenticated loopback HTTP controls and embedded UI.
+internal/app: native controls, linking/discovery and the background controller.
+internal/dashui: simple native form with optional advanced JSON.
+internal/nativepicker: OS file choosers (Windows, macOS and Linux Zenity).
+internal/nativedesktop: shared native app styling and launch/capture checks.
 internal/core/package.go: package schema, PE/Mach-O inspection and signatures.
 internal/core/session.go: transaction/restore engine and known-build effects.
 internal/core/memory_*.go: native OS process access.
@@ -63,7 +83,8 @@ Link the installed executable, launch the game yourself if desired, Connect,
 then enable mods. Switches start OFF only on a fresh profile, then remain saved
 until disabled. You may enable compatible switches while the game is closed;
 the controller reconnects every two seconds and restores saved choices. Closing
-the browser tab leaves it running; reopening GeoCheats reuses the same process.
+the GeoCheats window hides it; the controller keeps running. Reopen it from
+the tray/menu-bar icon or by launching the native app again.
 Quit restores runtime patches but remembers switches for next launch/login.
 On first enable, Start GeoCheats at login is installed and can be disabled in
 the UI. Keep the executable/app at a stable path. No game file is edited on disk.
@@ -76,7 +97,7 @@ Missing/different mod hashes are never applied to a newly updated game.
 Restore & disconnect pauses automatic connection until Connect or a switch change.
 User login entries: Windows HKCU Run/GeoCheats; macOS user LaunchAgents/
 io.geocheats.controller.plist; Linux XDG autostart/geocheats.desktop. They run
---background without opening a browser and are removable. No driver is installed.
+--background with a tray/menu-bar icon and are removable. No driver is installed.
 Existing controllers are protected by an OS lock/mutex and reopen their local UI.
 
 Resume verifies exact disk hashes, guards, original/replacement bytes and overlap
@@ -179,7 +200,9 @@ BUILD / GITHUB
 go test ./...
 go build -o GeoCheats ./cmd/geocheats
 go build -o Dash ./cmd/dash
-CGO_ENABLED=0 is supported. GOOS/GOARCH choose a cross-compilation target.
+Desktop GUI builds require CGO_ENABLED=1 and native graphics build libraries.
+The standalone Dash CLI still supports CGO_ENABLED=0. Use the platform packaging
+scripts for correctly embedded icons and native app bundles.
 See .github/workflows/build.yml for cross-platform build artifacts.
 No repository is created or uploaded automatically by this source package.
 

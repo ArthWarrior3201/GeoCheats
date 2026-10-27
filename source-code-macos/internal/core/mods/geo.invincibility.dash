@@ -6,7 +6,7 @@
   "status": "user-confirmed on uploaded GD 2.2091 build",
   "id": "geo.invincibility",
   "name": "Invincibility",
-  "description": "Survive ordinary hazard deaths. Does not remove all solid-block physics.",
+  "description": "Prevents player deaths while enabled.",
   "kind": "patch",
   "guards": [
     {

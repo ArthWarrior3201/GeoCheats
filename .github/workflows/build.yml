@@ -4,20 +4,23 @@ permissions:
   contents: read
 jobs:
   windows:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version: '1.24.9'
           cache-dependency-path: source-code-windows/go.sum
-      - run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64-x86-64
-      - run: go test ./... && bash packaging/build-windows.sh
+      - run: go test -tags ci ./... && bash packaging/build-windows.sh
         working-directory: source-code-windows
+        env: {CGO_ENABLED: '1', CC: gcc}
       - name: Verify embedded Windows icons and version resources
         run: |
-          python3 -m pip install pefile
-          python3 tools/check-windows-icons.py source-code-windows/out
+          python -m pip install pefile
+          python tools/check-windows-icons.py source-code-windows/out
       - uses: actions/upload-artifact@v7
         with:
           name: GeoCheats-Windows
@@ -30,9 +33,9 @@ jobs:
         with:
           go-version: '1.24.9'
           cache-dependency-path: source-code-macos/go.sum
-      - run: go test ./...
+      - run: go test -tags ci ./...
         working-directory: source-code-macos
-        env: {CGO_ENABLED: '0'}
+        env: {CGO_ENABLED: '1'}
       - name: Build, sign, launch, archive and verify Mac apps and DMG
         run: bash packaging/build-macos.sh
         working-directory: source-code-macos
@@ -45,7 +48,12 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: GeoCheats-macOS
-          path: source-code-macos/out/*
+          path: source-code-macos/out/GeoCheats-macOS.zip
+          archive: false
+      - uses: actions/upload-artifact@v7
+        with:
+          path: source-code-macos/out/GeoCheats-macOS.dmg
+          archive: false
   macos-intel-tests:
     runs-on: macos-15-intel
     steps:
@@ -54,9 +62,9 @@ jobs:
         with:
           go-version: '1.24.9'
           cache-dependency-path: source-code-macos/go.sum
-      - run: go test ./... && bash packaging/build-macos.sh
+      - run: go test -tags ci ./... && bash packaging/build-macos.sh
         working-directory: source-code-macos
-        env: {CGO_ENABLED: '0'}
+        env: {CGO_ENABLED: '1'}
   linux:
     runs-on: ubuntu-22.04
     steps:
@@ -65,17 +73,18 @@ jobs:
         with:
           go-version: '1.24.9'
           cache-dependency-path: source-code-linux/go.sum
-      - run: sudo apt-get update && sudo apt-get install -y rpm desktop-file-utils
+      - run: sudo apt-get update && sudo apt-get install -y rpm desktop-file-utils pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev xvfb xauth zenity
       - name: Test and build Linux apps and CLI
         run: |
-          go test ./...
+          go test -tags ci ./...
           go build -trimpath -ldflags='-s -w' -o GeoCheats ./cmd/geocheats
           go build -trimpath -ldflags='-s -w' -o Dash ./cmd/dash
           go build -trimpath -ldflags='-s -w' -o Dash-Builder ./cmd/dash-desktop
+          xvfb-run -a python3 ../tools/check-native-linux.py
           desktop-file-validate packaging/geocheats.desktop packaging/dash.desktop
           bash packaging/build-linux.sh
           python3 ../tools/check-linux-packages.py packages
         working-directory: source-code-linux
-        env: {CGO_ENABLED: '0'}
+        env: {CGO_ENABLED: '1'}
       - uses: actions/upload-artifact@v7
         with: {name: GeoCheats-Linux, path: source-code-linux/GeoCheats-Linux.zip}

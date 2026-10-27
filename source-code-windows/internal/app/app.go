@@ -1,32 +1,18 @@
 package app
 
 import (
-	"context"
-	"crypto/rand"
-	"embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"geocheats/internal/core"
-	"geocheats/internal/launchcheck"
-	"io"
-	"net"
-	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
-
-//go:embed ui.html geocheats.png
-var assets embed.FS
 
 type controller struct {
 	mu                  sync.Mutex
@@ -56,72 +42,6 @@ func dataRoot() string {
 		d = os.TempDir()
 	}
 	return filepath.Join(d, "GeoCheats")
-}
-func resolve(path string) (string, error) {
-	if path == "" {
-		return "", errors.New("choose or paste the installed game's executable path")
-	}
-	path = strings.Trim(strings.TrimSpace(path), "\"")
-	if strings.HasSuffix(strings.ToLower(path), ".app") {
-		dir := filepath.Join(path, "Contents", "MacOS")
-		entries, e := os.ReadDir(dir)
-		if e != nil {
-			return "", e
-		}
-		for _, f := range entries {
-			if !f.IsDir() && strings.Contains(strings.ToLower(f.Name()), "geometry") {
-				path = filepath.Join(dir, f.Name())
-				break
-			}
-		}
-	}
-	path, e := filepath.Abs(path)
-	if e != nil {
-		return "", e
-	}
-	return path, nil
-}
-func discover() []string {
-	home, _ := os.UserHomeDir()
-	roots := []string{}
-	switch runtime.GOOS {
-	case "windows":
-		for _, e := range []string{"ProgramFiles(x86)", "ProgramFiles"} {
-			if p := os.Getenv(e); p != "" {
-				roots = append(roots, filepath.Join(p, "Steam"))
-			}
-		}
-		for _, d := range []string{"C:", "D:", "E:", "F:"} {
-			roots = append(roots, d+`\SteamLibrary`)
-		}
-	case "linux":
-		roots = []string{filepath.Join(home, ".steam", "steam"), filepath.Join(home, ".steam", "root"), filepath.Join(home, ".local", "share", "Steam"), filepath.Join(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")}
-	case "darwin":
-		roots = []string{filepath.Join(home, "Library", "Application Support", "Steam")}
-	}
-	pattern := regexp.MustCompile(`"path"\s+"([^"\r\n]+)"`)
-	for _, root := range append([]string{}, roots...) {
-		b, e := os.ReadFile(filepath.Join(root, "steamapps", "libraryfolders.vdf"))
-		if e != nil {
-			continue
-		}
-		for _, m := range pattern.FindAllStringSubmatch(string(b), -1) {
-			roots = append(roots, strings.ReplaceAll(m[1], `\\`, `\`))
-		}
-	}
-	seen := map[string]bool{}
-	var result []string
-	for _, root := range roots {
-		base := filepath.Join(root, "steamapps", "common", "Geometry Dash")
-		for _, name := range []string{"GeometryDash.exe", "Geometry Dash.app"} {
-			p := filepath.Join(base, name)
-			if _, e := os.Stat(p); e == nil && !seen[p] {
-				result = append(result, p)
-				seen[p] = true
-			}
-		}
-	}
-	return result
 }
 func (c *controller) load() {
 	_ = os.MkdirAll(filepath.Join(c.root, "mods"), 0700)
@@ -159,7 +79,7 @@ func (c *controller) state() map[string]any {
 	if connected {
 		pid = c.session.Mem.Info().PID
 	}
-	return map[string]any{"name": "GeoCheats", "version": "1.2.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable(), "loginStart": c.loginStart}
+	return map[string]any{"name": "GeoCheats", "version": "1.3.0-experimental", "platform": runtime.GOOS + "/" + runtime.GOARCH, "image": c.image, "path": c.path, "connected": connected, "pid": pid, "mods": mods, "message": c.message, "detected": discover(), "globalKeys": core.GlobalKeysAvailable(), "loginStart": c.loginStart}
 }
 func (c *controller) action(action string, r request) error {
 	switch action {
@@ -171,9 +91,6 @@ func (c *controller) action(action string, r request) error {
 		im, e := core.Inspect(p)
 		if e != nil {
 			return e
-		}
-		if !strings.Contains(strings.ToLower(filepath.Base(p)), "geometry") {
-			return errors.New("select the Geometry Dash executable")
 		}
 		if c.session != nil {
 			if e = c.session.Close(); e != nil {
@@ -187,7 +104,7 @@ func (c *controller) action(action string, r request) error {
 		c.path = p
 		c.image = &im
 		c.prepareMacMod()
-		c.message = "Linked while closed or running. Connect is a separate step."
+		c.message = "Game linked."
 	case "launch":
 		if c.image == nil {
 			return errors.New("link your installed game first")
@@ -310,200 +227,4 @@ func openURL(url string) error {
 	}
 	go func() { _ = cmd.Wait() }()
 	return nil
-}
-func Run() {
-	c := &controller{root: dataRoot(), message: "Link the installed game first. No Geode or separate runtime needed."}
-	background := len(os.Args) > 1 && os.Args[1] == "--background"
-	report := launchcheck.ReportPath(os.Args[1:])
-	if report != "" {
-		root, e := os.MkdirTemp("", "geocheats-launch-check-")
-		if e != nil {
-			fmt.Println(e)
-			return
-		}
-		defer os.RemoveAll(root)
-		c.root = root
-		background = true
-	}
-	unlock, lockErr := instanceLock(c.root)
-	if errors.Is(lockErr, errAlreadyRunning) {
-		for attempt := 0; attempt < 10; attempt++ {
-			if reuseRunning(c.root, background) {
-				return
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-		fmt.Println("GeoCheats is already running; its control window is starting or busy.")
-		return
-	}
-	if lockErr != nil {
-		fmt.Println(lockErr)
-		return
-	}
-	defer unlock()
-	c.load()
-	if reuseRunning(c.root, background) {
-		return
-	}
-	random := make([]byte, 24)
-	if _, e := rand.Read(random); e != nil {
-		fmt.Println(e)
-		return
-	}
-	token := hex.EncodeToString(random)
-	listener, e := net.Listen("tcp4", "127.0.0.1:0")
-	if e != nil {
-		fmt.Println(e)
-		return
-	}
-	address := "http://" + listener.Addr().String()
-	url := address + "/" + token + "/"
-	instancePath := filepath.Join(c.root, "running.json")
-	if e := atomicFile(instancePath, []byte(url)); e != nil {
-		fmt.Println(e)
-		_ = listener.Close()
-		return
-	}
-	defer os.Remove(instancePath)
-	mux := http.NewServeMux()
-	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Host != listener.Addr().String() {
-			http.Error(w, "invalid host", 403)
-			return
-		}
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
-		if r.URL.Path == "/"+token+"/icon.png" && r.Method == "GET" {
-			raw, _ := assets.ReadFile("geocheats.png")
-			w.Header().Set("Content-Type", "image/png")
-			_, _ = w.Write(raw)
-			return
-		}
-		if r.URL.Path == "/"+token+"/" && r.Method == "GET" {
-			raw, _ := assets.ReadFile("ui.html")
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = io.WriteString(w, strings.ReplaceAll(string(raw), "__TOKEN__", token))
-			return
-		}
-		if !strings.HasPrefix(r.URL.Path, "/api/") || r.Header.Get("X-GeoCheats-Token") != token {
-			http.Error(w, "not found", 404)
-			return
-		}
-		if origin := r.Header.Get("Origin"); origin != "" && origin != address {
-			http.Error(w, "cross-origin request denied", 403)
-			return
-		}
-		action := strings.TrimPrefix(r.URL.Path, "/api/")
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		if action == "state" && r.Method == "GET" {
-			_ = json.NewEncoder(w).Encode(c.state())
-			return
-		}
-		if r.Method != "POST" {
-			http.Error(w, "POST required", 405)
-			return
-		}
-		var req request
-		if e := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256*1024)).Decode(&req); e != nil {
-			w.WriteHeader(400)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": e.Error()})
-			return
-		}
-		if action == "quit" {
-			if c.session != nil {
-				if e := c.session.Close(); e != nil {
-					w.WriteHeader(409)
-					_ = json.NewEncoder(w).Encode(map[string]string{"error": e.Error()})
-					return
-				}
-				c.session = nil
-			}
-			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Controller stopped; runtime patches restored. Saved switches remain for next launch/login."})
-			go func() { time.Sleep(100 * time.Millisecond); _ = server.Shutdown(context.Background()) }()
-			return
-		}
-		if e := c.action(action, req); e != nil {
-			c.message = e.Error()
-			w.WriteHeader(409)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": e.Error()})
-			return
-		}
-		_ = json.NewEncoder(w).Encode(c.state())
-	})
-	done := make(chan struct{})
-	defer close(done)
-	go func() {
-		ticker := time.NewTicker(8 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-done:
-				return
-			case <-ticker.C:
-				c.mu.Lock()
-				c.maintain(time.Now())
-				if s := c.session; s != nil {
-					chord, flight := core.PlatformKeys(s.Mem.Info().PID)
-					if core.GlobalKeysAvailable() {
-						s.SetFlight(flight)
-					}
-					if chord && !c.chord {
-						if e := s.Trigger(); e != nil {
-							c.message = e.Error()
-						} else {
-							c.triggerUntil = time.Now().Add(500 * time.Millisecond)
-							c.message = "Completion hotkey sent to game."
-						}
-					}
-					c.chord = chord
-					if !c.triggerUntil.IsZero() && time.Now().After(c.triggerUntil) {
-						if e := s.ClearTriggers(); e != nil {
-							c.message = e.Error()
-						} else {
-							c.triggerUntil = time.Time{}
-						}
-					}
-					if e := s.Tick(); e != nil {
-						c.message = e.Error()
-					}
-				}
-				c.mu.Unlock()
-			}
-		}
-	}()
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(signals)
-	go func() {
-		select {
-		case <-done:
-			return
-		case <-signals:
-			c.mu.Lock()
-			if c.session != nil {
-				if e := c.session.Close(); e != nil {
-					fmt.Println("Restore failed; restart Geometry Dash:", e)
-				}
-			}
-			c.mu.Unlock()
-			_ = server.Shutdown(context.Background())
-		}
-	}()
-	fmt.Println("GeoCheats:", url)
-	if report != "" {
-		go launchcheck.Run(server, address, token, url, report, "GeoCheats")
-	}
-	if !background {
-		if e = openURL(url); e != nil {
-			fmt.Println("Open this URL in your browser:", url)
-		}
-	}
-	if e = server.Serve(listener); e != nil && e != http.ErrServerClosed {
-		fmt.Println(e)
-	}
 }

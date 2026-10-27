@@ -3,12 +3,12 @@
 `build-macos.sh` must run on macOS. It creates universal Intel/Apple Silicon apps,
 adds ICNS resources and bundle metadata, signs nested CLI code first and seals
 each completed app. It validates signatures, icon decoding, both CPU slices,
-real LaunchServices startup and authenticated local UI/icon responses. It repeats
+real LaunchServices startup and rendered native controls and app-icon checks. It repeats
 app checks after extraction and verifies/mounts the final DMG.
 
 By default the build uses an ad-hoc identity. This is a valid local integrity
 signature, **not a Developer ID identity or Apple notarization**. A successful
-native CI launch does not prove that a downloaded quarantined app will satisfy
+native window launch does not prove that a downloaded quarantined app will satisfy
 Gatekeeper on another computer. The build does not remove quarantine, disable
 Gatekeeper/SIP, or alter the game's signature. A DMG is packaging, not a trust
 bypass. Check SIGNING-STATUS.txt in the actual downloaded package.

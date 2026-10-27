@@ -1,40 +1,49 @@
 # GeoCheats v1
 
-Standalone local mod controller and **Dash** authoring CLI. No Geode, Scoop,
-Python, Node, or separately installed language runtime is required by users.
-The app opens its controls in the installed browser on a private loopback URL.
+Native desktop Geometry Dash mod controller and Dash mod builder for Windows,
+macOS and Linux. The apps render their own windows and use OS file choosers;
+no browser, web page, WebView, or local web server provides the controls.
 
-Link a game while it is closed; connect separately after starting it. Paths
-and Steam discovery work with the current account rather than a fixed username.
+On launch, a valid saved link is reused. Otherwise the apps search Steam's
+standard installation, manifest and extra libraries. If Geometry Dash is found,
+its executable is linked automatically. If it is missing, click **Choose file**
+and select GeometryDash.exe (Windows/Proton) or Geometry Dash.app /
+GeometryDash.app (macOS). Once linked, the file prompt disappears.
 
-Seven recipes are included: Invincibility, High Jump, Super Fast, Super Slow,
-No Jump, Fly, and Instant Complete (C+G+D). Recipes target the exact Windows
-GD 2.2091 fingerprint documented in `mod_building_guide.txt`. Invincibility
-was user-confirmed; the new modes still require gameplay testing.
+Compatible mod switches can be enabled while the game is closed. Their state
+is saved and applied automatically when the matching game starts. Closing the
+GeoCheats window hides it and keeps the controller running; reopen it from the
+tray/menu-bar icon or by launching the app again. Quit restores runtime changes
+and keeps saved preferences for next time.
 
-Windows and Linux/Proton backends are implemented. macOS applications and
-inspection tools build, with an experimental Intel Mach memory backend, but
-native Intel invincibility can be discovered from the exact installed game's
-named death-handler symbol and supported entry prologue. Missing symbols,
-unsupported prologues, and universal games are refused. This is experimental;
-the other six native Mac modes still need separately verified profiles.
-Native ARM64 code patching is explicitly blocked. Do not interpret a Mac app
-build as verified Mac gameplay support.
+Dash has a small form: name, ID, address, expected bytes, replacement bytes,
+and **Create .dash**. Native open/save dialogs handle files. Advanced JSON is
+optional. The command-line tool remains available for scripts.
 
-Switches stay remembered per executable fingerprint until disabled. The controller
-reconnects and reapplies them when the linked game starts. Closing the browser
-keeps it running; launching GeoCheats again opens that same controller. On first
-enable, a removable login item is added. Disable it with Start GeoCheats at login.
-Keep the binary/app at a stable path. Quit restores runtime patches but retains
-saved switches for the next launch/login. Saved settings have an atomic backup;
-recognized code patches and speed baselines can recover after controller crashes.
-Deleted settings, changed permissions, game updates and a stopped controller
-cannot be made equivalent to a running mod. No system driver is installed.
+## Compatibility
 
-Read **mod_building_guide.txt** for all commands, schema, exact compatibility,
-known limitations and the human/AI development handoff. The source is ready
-to upload to a GitHub repository; no game executable is included.
+Windows GD 2.2091 invincibility was user-confirmed. The other six built-in modes
+remain experimental. Linux uses the Windows game under Proton/Wine and the
+user's existing process-access permissions. Native macOS linking is independent
+of mod compatibility: experimental Intel invincibility requires a supported
+thin Mach-O symbol/profile. Native ARM64/universal game patches and the other
+Mac modes remain unsupported. An app launch/build test is not a gameplay test.
 
-Build: `go test ./...`, then `go build ./cmd/geocheats` and `go build ./cmd/dash`.
-The pinned Go build dependency is purego (BSD license), compiled into relevant
-binaries. OS libraries, a browser and OS process-access permissions still apply.
+## Downloads and build
+
+The Mac ZIP has exactly two top-level bundles: **GeoCheats.app** and **Dash.app**.
+Documentation, signing status, icons and the Dash CLI are inside the bundles.
+A separate DMG contains those apps and an Applications shortcut. Builds without
+Developer ID credentials are ad-hoc signed, not Apple-notarized.
+
+Source folders are self-contained. Build scripts and the GitHub Actions workflow
+compile native GUIs using Go 1.24+, Fyne 2.8.2, CGO and OS graphics libraries.
+Windows uses MinGW-w64, macOS Xcode command-line tools, and Linux GL/X11 headers.
+Linux packages declare their OS graphics and Zenity file-dialog dependencies.
+No Geode, Python, Node, Go installation, or separate GUI runtime is required by
+end users. See mod_building_guide.txt and packaging scripts for exact commands.
+
+The GitHub Pages site remains a separate download page. Every Download click
+fetches GitHub's latest published stable release, with the five-second popup.
+CI builds artifacts; publishing releases and enabling Pages remain manual.
+No proprietary game executable is distributed here.
