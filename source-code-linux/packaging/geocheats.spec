@@ -1,5 +1,5 @@
 Name: geocheats
-Version: 1.0.0
+Version: 1.1.0
 Release: 1%{?dist}
 Summary: Local Geometry Dash mod controller and Dash authoring tool
 License: MIT AND BSD-2-Clause AND BSD-3-Clause

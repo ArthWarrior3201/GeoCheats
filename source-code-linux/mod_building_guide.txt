@@ -21,7 +21,8 @@ Native Linux attachment depends on the user's existing ptrace permissions;
 GeoCheats does not weaken them. X11 global hotkeys require libX11 and an EWMH
 window manager; Wayland global hotkeys are unavailable. UI actions remain.
 macOS Intel/Apple Silicon: app, linking, inspection and Dash are built.
-An Intel Mach task-memory backend is implemented but untested on a Mac.
+A Mach task-memory backend is implemented; native CI exercises self-process
+lookup, memory reads, writes and restoration. External game access is unverified.
 The seven bundled recipes target Windows/Proton, not native Mac. An experimental
 Intel Mac invincibility recipe is generated locally when the exact death-handler
 symbol and supported frame prologue exist in the linked game's symbol table.
@@ -78,7 +79,8 @@ symbol: __ZN9PlayLayer13destroyPlayerEP12PlayerObjectP10GameObject. It must uniq
 resolve inside __text, with Intel entry 55 48 89 e5. The recipe changes 55 to c3,
 guards the following 15 bytes and pins the whole executable SHA-256. No public
 address is guessed, no Geode runtime is loaded and no ARM64 patch is emitted.
-Only synthetic fixture tests pass today; real native Mac testing remains needed.
+Synthetic recipe tests and native self-memory tests are provided; real native
+Geometry Dash gameplay tests remain needed.
 
 MODS
 Invincibility: early return from player-death routine. Solid physics remain.

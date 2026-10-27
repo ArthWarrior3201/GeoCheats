@@ -9,7 +9,7 @@ install -m755 Dash "$build_root/deb/usr/bin/geocheats-dash"
 install -m644 mod_building_guide.txt "$build_root/deb/usr/share/doc/geocheats/"
 install -m644 packaging/geocheats.desktop "$build_root/deb/usr/share/applications/"
 cp packaging/control "$build_root/deb/DEBIAN/control"
-dpkg-deb --root-owner-group --build "$build_root/deb" packages/geocheats_1.0.0_amd64.deb
+dpkg-deb --root-owner-group --build "$build_root/deb" packages/geocheats_1.1.0_amd64.deb
 tar -C "$build_root/deb" --exclude=DEBIAN -czf "$build_root/rpm/SOURCES/geocheats-files.tar.gz" usr
 rpmbuild --define "_topdir $build_root/rpm" -bb packaging/geocheats.spec
 find "$build_root/rpm/RPMS" -name '*.rpm' -exec cp '{}' packages/ \;
