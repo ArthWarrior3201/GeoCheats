@@ -15,17 +15,17 @@ import (
 var macOnce sync.Once
 var macErr error
 var taskSelf uint32
-var listPIDs func(uint32, uint32, uintptr, int32) int32
-var pidPath func(int32, uintptr, uint32) int32
+var listPIDs func(uint32, uint32, unsafe.Pointer, int32) int32
+var pidPath func(int32, unsafe.Pointer, uint32) int32
 var getTask func(uint32, int32, *uint32) int32
-var readVM func(uint32, uint64, uint64, uintptr, *uint64) int32
-var writeVM func(uint32, uint64, uintptr, uint32) int32
+var readVM func(uint32, uint64, uint64, unsafe.Pointer, *uint64) int32
+var writeVM func(uint32, uint64, unsafe.Pointer, uint32) int32
 var protectVM func(uint32, uint64, uint64, int32, int32) int32
-var regionVM func(uint32, *uint64, *uint64, int32, uintptr, *uint32, *uint32) int32
+var regionVM func(uint32, *uint64, *uint64, int32, unsafe.Pointer, *uint32, *uint32) int32
 var suspendTask func(uint32) int32
 var resumeTask func(uint32) int32
 var deallocatePort func(uint32, uint32) int32
-var taskInfo func(uint32, int32, uintptr, *uint32) int32
+var taskInfo func(uint32, int32, unsafe.Pointer, *uint32) int32
 
 func initMac() error {
 	macOnce.Do(func() {
@@ -66,9 +66,9 @@ func initMac() error {
 }
 func processPath(pid int) string {
 	b := make([]byte, 4096)
-	n := pidPath(int32(pid), uintptr(unsafe.Pointer(&b[0])), uint32(len(b)))
+	n := pidPath(int32(pid), unsafe.Pointer(&b[0]), uint32(len(b)))
 	runtime.KeepAlive(b)
-	if n <= 0 {
+	if n <= 0 || int(n) > len(b) {
 		return ""
 	}
 	return strings.TrimRight(string(b[:n]), "\x00")
@@ -77,12 +77,12 @@ func FindProcesses(path string) ([]ProcessInfo, error) {
 	if e := initMac(); e != nil {
 		return nil, e
 	}
-	size := listPIDs(1, 0, 0, 0)
+	size := listPIDs(1, 0, nil, 0)
 	if size <= 0 {
 		return nil, errors.New("proc_listpids failed")
 	}
 	pids := make([]int32, size/4+1024)
-	n := listPIDs(1, 0, uintptr(unsafe.Pointer(&pids[0])), int32(len(pids)*4))
+	n := listPIDs(1, 0, unsafe.Pointer(&pids[0]), int32(len(pids)*4))
 	runtime.KeepAlive(pids)
 	if n < 0 || int(n)/4 > len(pids) {
 		return nil, errors.New("proc_listpids returned an invalid process count")
@@ -113,7 +113,7 @@ func OpenMemory(info ProcessInfo) (Memory, error) {
 	// TASK_DYLD_INFO gives the main image load address. PE offsets are never reused for a Mach-O game.
 	var dyld [3]uint64
 	count := uint32(5)
-	if code := taskInfo(task, 17, uintptr(unsafe.Pointer(&dyld[0])), &count); code != 0 {
+	if code := taskInfo(task, 17, unsafe.Pointer(&dyld[0]), &count); code != 0 {
 		_ = m.Close()
 		return nil, fmt.Errorf("task_info Mach %d", code)
 	}
@@ -150,7 +150,7 @@ func (m *macMemory) Read(a uint64, n int) ([]byte, error) {
 	}
 	b := make([]byte, n)
 	var got uint64
-	code := readVM(m.task, a, uint64(n), uintptr(unsafe.Pointer(&b[0])), &got)
+	code := readVM(m.task, a, uint64(n), unsafe.Pointer(&b[0]), &got)
 	runtime.KeepAlive(b)
 	if code != 0 || got != uint64(n) {
 		return nil, fmt.Errorf("mach_vm_read failed (%d)", code)
@@ -166,7 +166,7 @@ func (m *macMemory) Write(a uint64, b []byte) (err error) {
 	info := [16]int32{}
 	count := uint32(9)
 	var object uint32
-	if code := regionVM(m.task, &address, &size, 9, uintptr(unsafe.Pointer(&info[0])), &count, &object); code != 0 {
+	if code := regionVM(m.task, &address, &size, 9, unsafe.Pointer(&info[0]), &count, &object); code != 0 {
 		return fmt.Errorf("mach_vm_region failed (%d)", code)
 	}
 	if object != 0 {
@@ -188,7 +188,7 @@ func (m *macMemory) Write(a uint64, b []byte) (err error) {
 			err = errors.Join(err, fmt.Errorf("restore protection failed (%d)", code))
 		}
 	}()
-	code := writeVM(m.task, a, uintptr(unsafe.Pointer(&b[0])), uint32(len(b)))
+	code := writeVM(m.task, a, unsafe.Pointer(&b[0]), uint32(len(b)))
 	runtime.KeepAlive(b)
 	if code != 0 {
 		return fmt.Errorf("mach_vm_write failed (%d)", code)

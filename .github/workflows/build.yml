@@ -40,6 +40,7 @@ jobs:
         with: {name: GeoCheats-macOS, path: GeoCheats-macOS.zip}
   macos-native-tests:
     strategy:
+      fail-fast: false
       matrix:
         runner: [macos-15-intel, macos-15]
     runs-on: ${{ matrix.runner }}
