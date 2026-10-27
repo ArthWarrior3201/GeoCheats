@@ -18,7 +18,13 @@ with tempfile.TemporaryDirectory(prefix='geocheats-launch-') as tmp:
         decoded=Path(tmp)/f'{name}.iconset'
         subprocess.run(['iconutil','--convert','iconset','--output',str(decoded),str(icon)],check=True)
         report=Path(tmp)/f'{name}.json'
-        subprocess.run(['/usr/bin/open','-W','-n',str(app),'--args','--launch-check',str(report)],check=True,timeout=45)
+        log=Path(tmp)/f'{name}-launch.log'
+        subprocess.run(['/usr/bin/open','-W','-n','--stdout',str(log),'--stderr',str(log),str(app),'--args','--launch-check',str(report)],check=True,timeout=45)
+        if log.exists(): print(log.read_text(errors='replace'))
+        if not report.is_file():
+            diagnostic=subprocess.run([str(binary),'--launch-check',str(report)],capture_output=True,text=True,timeout=35)
+            print('Direct-launch diagnostic:',diagnostic.returncode,diagnostic.stdout,diagnostic.stderr,flush=True)
+            raise AssertionError(f'{name}: LaunchServices did not produce its native startup report')
         assert report.is_file(),f'{name} launched without producing its startup report'
         result=json.loads(report.read_text());assert result.get('ok'),result
         assert result.get('ui')=='native' and result.get('browser') is False,result

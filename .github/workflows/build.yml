@@ -73,7 +73,7 @@ jobs:
         with:
           go-version: '1.24.9'
           cache-dependency-path: source-code-linux/go.sum
-      - run: sudo apt-get update && sudo apt-get install -y rpm desktop-file-utils pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev xvfb xauth zenity
+      - run: sudo apt-get update && sudo apt-get install -y rpm desktop-file-utils pkg-config libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libdecor-0-dev xorg-dev libxkbcommon-dev xvfb xauth zenity
       - name: Test and build Linux apps and CLI
         run: |
           go test -tags ci ./...
