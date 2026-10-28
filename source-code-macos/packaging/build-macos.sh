@@ -80,10 +80,3 @@ PY
 mkdir -p "$work/unpacked"
 ditto -x -k out/GeoCheats-macOS.zip "$work/unpacked"
 python3 packaging/check-bundles.py "$work/unpacked"
-ln -s /Applications "$stage/Applications"
-hdiutil create -volname GeoCheats -srcfolder "$stage" -format UDZO -ov out/GeoCheats-macOS.dmg
-hdiutil verify out/GeoCheats-macOS.dmg
-mkdir -p "$work/mounted"
-hdiutil attach -readonly -nobrowse -mountpoint "$work/mounted" out/GeoCheats-macOS.dmg
-for name in GeoCheats Dash; do codesign --verify --deep --strict --verbose=2 "$work/mounted/$name.app"; done
-hdiutil detach "$work/mounted"
