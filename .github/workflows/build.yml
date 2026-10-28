@@ -36,7 +36,7 @@ jobs:
       - run: go test -tags ci ./...
         working-directory: source-code-macos
         env: {CGO_ENABLED: '1'}
-      - name: Build, sign, launch, archive and verify Mac apps and DMG
+      - name: Build, sign, launch, archive and verify Mac apps
         run: bash packaging/build-macos.sh
         working-directory: source-code-macos
         env:
@@ -49,10 +49,6 @@ jobs:
         with:
           name: GeoCheats-macOS
           path: source-code-macos/out/GeoCheats-macOS.zip
-          archive: false
-      - uses: actions/upload-artifact@v7
-        with:
-          path: source-code-macos/out/GeoCheats-macOS.dmg
           archive: false
   macos-arm64-tests:
     runs-on: macos-15
