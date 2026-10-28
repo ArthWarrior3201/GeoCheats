@@ -25,7 +25,7 @@ JSON recipe, discover the experimental Intel Mac profile, and download .dash.
 Dash is a graphical authoring app for creating and validating .dash files.
 Windows: Dash.exe is the GUI. EXE icons require
 packaging/build-windows.sh (windres generates linked .syso resources).
-macOS: GeoCheats.app and Dash.app are universal app bundles in ZIP and DMG.
+macOS: GeoCheats.app and Dash.app are universal app bundles in the ZIP.
 packaging/build-macos.sh builds on
 macOS, signs the full bundles, validates signatures/icons, and launches both
 apps through LaunchServices before and after ZIP extraction. Without Developer
