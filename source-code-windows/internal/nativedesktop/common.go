@@ -10,9 +10,27 @@ import (
 	"time"
 )
 
-type Theme struct{ fyne.Theme }
+type Theme struct {
+	fyne.Theme
+	name string
+}
 
 func (t Theme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	if name == theme.ColorNameBackground {
+		if variant == theme.VariantLight {
+			if t.name == "Dash" {
+				return color.NRGBA{R: 247, G: 234, B: 255, A: 255}
+			}
+			return color.NRGBA{R: 225, G: 242, B: 255, A: 255}
+		}
+		if t.name == "Dash" {
+			return color.NRGBA{R: 37, G: 25, B: 65, A: 255}
+		}
+		return color.NRGBA{R: 27, G: 62, B: 92, A: 255}
+	}
+	if name == theme.ColorNamePrimary && t.name == "Dash" {
+		return color.NRGBA{R: 230, G: 100, B: 200, A: 255}
+	}
 	if name == theme.ColorNamePrimary {
 		return color.NRGBA{R: 110, G: 190, B: 40, A: 255}
 	}
@@ -20,7 +38,7 @@ func (t Theme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.
 }
 func Setup(a fyne.App, icon []byte, name string) {
 	a.SetIcon(fyne.NewStaticResource(name+".png", icon))
-	a.Settings().SetTheme(Theme{theme.DefaultTheme()})
+	a.Settings().SetTheme(Theme{theme.DefaultTheme(), name})
 }
 func ReportPath() string {
 	for i, arg := range os.Args {

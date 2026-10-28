@@ -213,3 +213,25 @@ cache synchronization are outstanding. Backend OS permission failures
 are surfaced, not bypassed. Linux/Wayland keys require UI controls.
 Browser UI and native memory APIs need platform testing. The game EXE must
 never be committed or redistributed in the repository.
+
+
+MODCODE 1 (portable source format)
+ModCode is a small, text-based language. A host adapts instructions to its game
+and validates them against the target. Dash implements only the patch instruction,
+not a general-purpose language or automatic game support. The linked executable
+provides its exact SHA-256, format and architecture; Dash refuses mismatched bytes.
+Comments start with # on a separate line. Strings use JSON-style double quotes.
+
+modcode 1
+name "My mod"
+id "author.my-mod"
+patch 0x1234 "55" -> "C3"
+
+The first non-comment line must be modcode 1. name and id are required. Each
+patch gives a hexadecimal module-relative address, exact expected hex bytes,
+and equal-length replacement bytes. Multiple patch lines are supported. Unknown
+instructions, invalid bytes and mismatched files are rejected. Addresses and
+bytes shown above are placeholders, not a working Geometry Dash mod. A .dash
+file is generated after validation. Another application can implement this syntax
+with its own game adapter; this does not guarantee any specific game can be modded.
+Test actual gameplay and disable/restore behavior on the intended game build.

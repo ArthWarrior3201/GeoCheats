@@ -11,12 +11,12 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	loader "geocheats/internal/app"
 	"geocheats/internal/core"
 	"geocheats/internal/nativedesktop"
 	"geocheats/internal/nativepicker"
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -166,6 +166,30 @@ func Run() {
 			})
 		}()
 	})
+	codeButton := widget.NewButton("ModCode…", func() {
+		code := widget.NewMultiLineEntry()
+		code.SetText("modcode 1\nname \"My mod\"\nid \"author.my-mod\"\n# Replace these bytes and address with verified values\npatch 0x1234 \"55\" -> \"C3\"\n")
+		code.SetMinRowsVisible(12)
+		d := dialog.NewCustomConfirm("ModCode", "Use code", "Cancel", code, func(ok bool) {
+			if !ok {
+				return
+			}
+			p, err := core.ParseModCode(code.Text, image)
+			if err == nil {
+				err = core.VerifyFile(p, game)
+			}
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+			name.SetText(p.Name)
+			id.SetText(p.ID)
+			advanced = &p
+			status.SetText("ModCode validated. Create the .dash file.")
+		}, w)
+		d.Resize(fyne.NewSize(520, 400))
+		d.Show()
+	})
 	advancedButton := widget.NewButton("Advanced…", func() {
 		p, _ := build()
 		if advanced != nil {
@@ -205,13 +229,19 @@ func Run() {
 		entry.OnChanged = func(string) { advanced = nil }
 	}
 	// Loading a complete recipe sets fields first, then preserves the advanced data.
-	body = container.NewBorder(linkedLabel, container.NewVBox(status, container.NewHBox(save, importRecipe, layout.NewSpacer(), advancedButton)), nil, nil, form)
+	body = container.NewBorder(linkedLabel, container.NewVBox(status, container.NewHBox(save, importRecipe, codeButton, advancedButton)), nil, nil, form)
 	body.Hide()
 	icon := canvas.NewImageFromResource(fyne.NewStaticResource("Dash.png", logo))
 	icon.FillMode = canvas.ImageFillContain
 	icon.SetMinSize(fyne.NewSize(44, 44))
 	header := container.NewHBox(icon, widget.NewLabelWithStyle("Dash", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
-	w.SetContent(container.NewPadded(container.NewBorder(header, nil, nil, nil, container.NewStack(prompt, body))))
+	rainbow := container.NewGridWithColumns(6)
+	for _, c := range []color.NRGBA{{R: 255, G: 100, B: 135, A: 255}, {R: 255, G: 170, B: 90, A: 255}, {R: 255, G: 218, B: 100, A: 255}, {R: 100, G: 215, B: 165, A: 255}, {R: 90, G: 165, B: 250, A: 255}, {R: 195, G: 120, B: 235, A: 255}} {
+		bar := canvas.NewRectangle(c)
+		bar.SetMinSize(fyne.NewSize(1, 5))
+		rainbow.Add(bar)
+	}
+	w.SetContent(container.NewPadded(container.NewBorder(container.NewVBox(header, rainbow), nil, nil, nil, container.NewStack(prompt, body))))
 	w.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("App", fyne.NewMenuItem("Change game…", choose), fyne.NewMenuItem("Quit", a.Quit))))
 	if previous := a.Preferences().String("game"); previous != "" {
 		_ = accept(previous)

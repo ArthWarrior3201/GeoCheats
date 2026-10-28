@@ -66,7 +66,7 @@ func buildControls(w fyne.Window, s *Service, picker nativepicker.Picker) *contr
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.NewSize(44, 44))
 	title := widget.NewLabelWithStyle("GeoCheats Mod Controller", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-	header := container.NewHBox(image, title, layout.NewSpacer())
+	header := container.NewHBox(image, title, layout.NewSpacer(), widget.NewLabel("☁  ☁"))
 	choose := widget.NewButton("Choose file…", v.chooseGame)
 	v.prompt = container.NewCenter(container.NewVBox(widget.NewLabel("Link Geometry Dash"), choose))
 	game := widget.NewLabel("Game Linked Successfully")

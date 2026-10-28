@@ -107,6 +107,17 @@ func Run() {
 					message = "Recipe opened."
 				}
 			}
+		case "modcode":
+			var p core.Package
+			p, e = core.ParseModCode(text("code"), image)
+			if e == nil {
+				e = core.VerifyFile(p, game)
+			}
+			if e == nil {
+				use(p)
+				refresh = true
+				message = "ModCode validated. Create the .dash file."
+			}
 		case "advanced":
 			var p core.Package
 			e = json.Unmarshal([]byte(text("json")), &p)

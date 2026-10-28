@@ -16,7 +16,7 @@ function selectAssets(assets, product = 'geocheats') {
   const isGeoCheats = n => /^geocheats(?:[-_.]|$)/.test(n);
   const shared = os => one(n => isGeoCheats(n) && os.test(n));
   return {
-    Windows: one(n => (dash ? isDash(n) : isGeoCheats(n)) && /^(?:dash|geocheats)(?:-windows)?\.exe$/.test(n) && !/installer|setup|cli/.test(n)),
+    Windows: shared(/windows.*\.zip$/),
     macOS: (dash && one(n => isDash(n) && /(?:macos|darwin).*\.zip$/.test(n))) || shared(/(?:macos|darwin).*\.zip$/),
     Linux: (dash && one(n => isDash(n) && /linux.*\.zip$/.test(n))) || shared(/linux.*\.zip$/)
   };
@@ -44,7 +44,7 @@ function renderPlatforms() {
   const release = currentRelease;
   const assets = selectAssets(release && Array.isArray(release.assets) ? release.assets : [], selectedProduct);
   const panel = document.getElementById('platforms'); panel.replaceChildren();
-  for (const [platform, hint] of [['Windows', 'Portable .exe'], ['macOS', 'Application .zip'], ['Linux', '.deb + .rpm .zip']]) {
+  for (const [platform, hint] of [['Windows', 'Applications .zip'], ['macOS', 'Application .zip'], ['Linux', '.deb + .rpm .zip']]) {
     const a = document.createElement('a'); a.className = 'os';
     const label = document.createElement('span'); label.textContent = platform;
     const info = document.createElement('small'); const asset = assets[platform]; const href = asset && safeAssetURL(asset.browser_download_url);
