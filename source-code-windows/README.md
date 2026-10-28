@@ -33,7 +33,7 @@ Mac modes remain unsupported. An app launch/build test is not a gameplay test.
 
 The Mac ZIP has exactly two top-level bundles: **GeoCheats.app** and **Dash.app**.
 Documentation, signing status and icons are inside the bundles.
-A separate DMG contains those apps and an Applications shortcut. Builds without
+Builds without
 Developer ID credentials are ad-hoc signed, not Apple-notarized.
 
 Source folders are self-contained. Build scripts and the GitHub Actions workflow
