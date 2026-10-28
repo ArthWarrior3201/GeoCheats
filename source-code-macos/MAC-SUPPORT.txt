@@ -10,7 +10,7 @@ and creates an exact SHA-256 recipe with live guards. Missing/ambiguous symbols,
 different prologues and unsupported binaries produce a useful error, not a guess.
 
 You can export that experimental recipe with:
-  ./Dash mac-profile "/path/to/Geometry Dash.app/Contents/MacOS/Geometry Dash" mac-invincibility.dash
+Use Dash's Advanced controls to inspect and export the experimental recipe.
 
 This has synthetic-file tests, not a real Mac gameplay test. Native ARM64 game
 instruction-cache synchronization and universal game slice support remain blocked.
@@ -46,9 +46,9 @@ Mac testing is still necessary, and macOS may restrict task-memory access.
 Native ARM64 code patching additionally needs instruction-cache support.
 No real Mac gameplay compatibility is claimed based on compilation or synthetic tests.
 
-Native desktop update 1.3.0:
+Native desktop update 1.3.1:
 The file chooser accepts the actual .app bundle and resolves CFBundleExecutable.
 Steam manifests, extra libraries and both common bundle spellings are searched.
 The ZIP has only GeoCheats.app and Dash.app. Guides, notices, signing status and
-CLI helpers are inside the apps. Native GUI launch tests do not change the game
+Dash resources are inside the apps. Native GUI launch tests do not change the game
 compatibility limitations described above.

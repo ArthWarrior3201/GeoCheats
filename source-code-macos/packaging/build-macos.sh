@@ -33,7 +33,6 @@ for arch in amd64 arm64; do
   mkdir -p "$work/$arch"
   GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -ldflags='-s -w' -o "$work/$arch/GeoCheats" ./cmd/geocheats
   GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -ldflags='-s -w' -o "$work/$arch/Dash" ./cmd/dash-desktop
-  GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "$work/$arch/dash-cli" ./cmd/dash
 done
 
 for name in GeoCheats Dash; do
@@ -52,14 +51,10 @@ for name in GeoCheats Dash; do
   fi
   if [[ "$name" == GeoCheats ]]; then cp packaging/Info.plist "$app/Contents/Info.plist"; else
     cp packaging/Dash-Info.plist "$app/Contents/Info.plist"
-    mkdir -p "$app/Contents/Helpers"
-    lipo -create "$work/amd64/dash-cli" "$work/arm64/dash-cli" -output "$app/Contents/Helpers/dash"
-    chmod 755 "$app/Contents/Helpers/dash"
   fi
   # Sign nested executables first, then seal the complete app after all resources exist.
   sign=(--force --sign "$identity")
   if [[ "$identity" == '-' ]]; then sign+=(--timestamp=none); else sign+=(--keychain "$keychain" --options runtime --timestamp); fi
-  if [[ "$name" == Dash ]]; then codesign "${sign[@]}" "$app/Contents/Helpers/dash"; fi
   if [[ "$name" == GeoCheats ]]; then codesign "${sign[@]}" --entitlements packaging/Debugging.entitlements "$app"; else codesign "${sign[@]}" "$app"; fi
 done
 

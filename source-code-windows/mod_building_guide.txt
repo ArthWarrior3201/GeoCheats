@@ -12,25 +12,25 @@ memory mod can take effect only after a compatible game process starts.
 The native windows contain no slogan, browser UI, WebView or local web server.
 The only HTTP client remaining is a one-time upgrade helper that can gracefully
 stop an older browser-based GeoCheats controller; it serves no network API.
-The Mac ZIP contains only GeoCheats.app and Dash.app. Helper CLI, icons, notices,
-compatibility details and signing status live inside Contents/Resources (documents/icons) and Contents/Helpers (CLI).
+The Mac ZIP contains only GeoCheats.app and Dash.app. Icons and notices
+compatibility details and signing status live inside Contents/Resources.
 Dash's main screen is a small patch form; Advanced JSON is optional.
 
 
-NATIVE DESKTOP UPDATE (1.3.0)
-Dash now includes a graphical recipe builder in addition to its original CLI.
+NATIVE DESKTOP UPDATE (1.3.1)
+Dash is a graphical recipe builder for creating and validating .dash files.
 Both GeoCheats and Dash use the supplied logos in ICNS/ICO/Linux PNG formats.
 The GUI can inspect a game, generate a single-patch draft, verify a complete
 JSON recipe, discover the experimental Intel Mac profile, and download .dash.
-The CLI remains available for automated scripts and AI-driven authoring.
-Windows: Dash.exe is the GUI; Dash-CLI.exe is the CLI. EXE icons require
+Dash is a graphical authoring app for creating and validating .dash files.
+Windows: Dash.exe is the GUI. EXE icons require
 packaging/build-windows.sh (windres generates linked .syso resources).
 macOS: GeoCheats.app and Dash.app are universal app bundles in ZIP and DMG.
-The CLI is Dash.app/Contents/Helpers/dash. packaging/build-macos.sh builds on
+packaging/build-macos.sh builds on
 macOS, signs the full bundles, validates signatures/icons, and launches both
 apps through LaunchServices before and after ZIP extraction. Without Developer
 ID secrets these are ad-hoc signed, not notarized; see packaging/SIGNING.md.
-Linux: geocheats-dash is the CLI; geocheats-dash-builder is the GUI. Both app
+Linux: geocheats-dash is the Dash GUI. The app
 launchers use registered hicolor icons. DEB/RPM package payloads are checked.
 Packaging checks do not extend native game compatibility or prove gameplay.
 
@@ -67,7 +67,7 @@ Do not claim all platforms have gameplay support based on compilation alone.
 
 PROJECT MAP
 cmd/geocheats: local app entrypoint.
-cmd/dash: authoring CLI.
+cmd/dash-desktop: Dash GUI entrypoint.
 internal/app: native controls, linking/discovery and the background controller.
 internal/dashui: simple native form with optional advanced JSON.
 internal/nativepicker: OS file choosers (Windows, macOS and Linux Zenity).
@@ -201,7 +201,7 @@ go test ./...
 go build -o GeoCheats ./cmd/geocheats
 go build -o Dash ./cmd/dash
 Desktop GUI builds require CGO_ENABLED=1 and native graphics build libraries.
-The standalone Dash CLI still supports CGO_ENABLED=0. Use the platform packaging
+Use the platform packaging
 scripts for correctly embedded icons and native app bundles.
 See .github/workflows/build.yml for cross-platform build artifacts.
 No repository is created or uploaded automatically by this source package.

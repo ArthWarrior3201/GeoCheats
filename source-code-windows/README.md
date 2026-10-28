@@ -18,7 +18,7 @@ and keeps saved preferences for next time.
 
 Dash has a small form: name, ID, address, expected bytes, replacement bytes,
 and **Create .dash**. Native open/save dialogs handle files. Advanced JSON is
-optional. The command-line tool remains available for scripts.
+optional. Dash provides the authoring controls directly in its app.
 
 ## Compatibility
 
@@ -32,7 +32,7 @@ Mac modes remain unsupported. An app launch/build test is not a gameplay test.
 ## Downloads and build
 
 The Mac ZIP has exactly two top-level bundles: **GeoCheats.app** and **Dash.app**.
-Documentation, signing status, icons and the Dash CLI are inside the bundles.
+Documentation, signing status and icons are inside the bundles.
 A separate DMG contains those apps and an Applications shortcut. Builds without
 Developer ID credentials are ad-hoc signed, not Apple-notarized.
 
