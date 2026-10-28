@@ -44,7 +44,7 @@ function renderPlatforms() {
   const release = currentRelease;
   const assets = selectAssets(release && Array.isArray(release.assets) ? release.assets : [], selectedProduct);
   const panel = document.getElementById('platforms'); panel.replaceChildren();
-  for (const [platform, hint] of [['Windows', 'Applications .zip'], ['macOS', 'Application .zip'], ['Linux', '.deb + .rpm .zip']]) {
+  for (const [platform, hint] of [['Windows', 'Applications in .zip'], ['macOS', 'Applications in .zip'], ['Linux', '.deb + .rpm in .zip']]) {
     const a = document.createElement('a'); a.className = 'os';
     const label = document.createElement('span'); label.textContent = platform;
     const info = document.createElement('small'); const asset = assets[platform]; const href = asset && safeAssetURL(asset.browser_download_url);
