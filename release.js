@@ -29,8 +29,7 @@ function renderRelease(release, error) {
   document.getElementById('error').textContent = error || '';
   document.getElementById('release-name').textContent = release ? release.name || release.tag_name : 'Latest release unavailable';
   const notes = document.getElementById('release-link');
-  notes.href = `https://github.com/${REPOSITORY}/releases`;
-  if (release && typeof release.tag_name === 'string') notes.href += `/tag/${encodeURIComponent(release.tag_name)}`;
+  notes.href = `https://github.com/${REPOSITORY}`;
   renderPlatforms();
 }
 function renderPlatforms() {
