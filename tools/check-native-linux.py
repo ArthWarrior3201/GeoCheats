@@ -4,7 +4,7 @@ from pathlib import Path
 import json,subprocess,tempfile
 
 with tempfile.TemporaryDirectory(prefix='native-window-check-') as temporary:
-    for binary,name in [('GeoCheats','GeoCheats'),('Dash-Builder','Dash')]:
+    for binary,name in [('GeoCheats','GeoCheats'),('Dash','Dash')]:
         report=Path(temporary)/(name+'.json')
         subprocess.run([str(Path(binary).resolve()),'--launch-check',str(report)],check=True,timeout=40)
         state=json.loads(report.read_text())
