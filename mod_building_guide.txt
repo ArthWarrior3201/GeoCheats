@@ -25,7 +25,7 @@ JSON recipe, discover the experimental Intel Mac profile, and download .dash.
 The CLI remains available for automated scripts and AI-driven authoring.
 Windows: Dash.exe is the GUI; Dash-CLI.exe is the CLI. EXE icons require
 packaging/build-windows.sh (windres generates linked .syso resources).
-macOS: GeoCheats.app and Dash.app are universal app bundles in ZIP and DMG.
+macOS: GeoCheats.app and Dash.app are universal app bundles in the ZIP.
 The CLI is Dash.app/Contents/Helpers/dash. packaging/build-macos.sh builds on
 macOS, signs the full bundles, validates signatures/icons, and launches both
 apps through LaunchServices before and after ZIP extraction. Without Developer
