@@ -4,7 +4,7 @@ import struct, sys
 from pathlib import Path
 import pefile
 
-for name in ['GeoCheats-Windows.exe','Dash-Windows.exe','Dash-CLI.exe']:
+for name in ['GeoCheats.exe','Dash.exe','Dash-CLI.exe']:
     pe=pefile.PE(str(Path(sys.argv[1])/name))
     types={entry.id:entry for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries}
     assert 3 in types and 14 in types and 16 in types, f'{name}: missing icon/group/version resources'

@@ -16,7 +16,7 @@ function selectAssets(assets, product = 'geocheats') {
   const isGeoCheats = n => /^geocheats(?:[-_.]|$)/.test(n);
   const shared = os => one(n => isGeoCheats(n) && os.test(n));
   return {
-    Windows: one(n => (dash ? isDash(n) : isGeoCheats(n)) && /windows.*\.exe$/.test(n) && !/installer|setup|cli/.test(n)),
+    Windows: one(n => (dash ? isDash(n) : isGeoCheats(n)) && /^(?:dash|geocheats)(?:-windows)?\.exe$/.test(n) && !/installer|setup|cli/.test(n)),
     macOS: (dash && one(n => isDash(n) && /(?:macos|darwin).*\.zip$/.test(n))) || shared(/(?:macos|darwin).*\.zip$/),
     Linux: (dash && one(n => isDash(n) && /linux.*\.zip$/.test(n))) || shared(/linux.*\.zip$/)
   };
