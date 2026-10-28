@@ -65,7 +65,7 @@ func buildControls(w fyne.Window, s *Service, picker nativepicker.Picker) *contr
 	image := canvas.NewImageFromResource(fyne.NewStaticResource("GeoCheats.png", logo))
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.NewSize(44, 44))
-	title := widget.NewLabelWithStyle("GeoCheats", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle("GeoCheats Mod Controller", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	header := container.NewHBox(image, title, layout.NewSpacer())
 	choose := widget.NewButton("Choose file…", v.chooseGame)
 	v.prompt = container.NewCenter(container.NewVBox(widget.NewLabel("Link Geometry Dash"), choose))
@@ -206,7 +206,7 @@ func Run() {
 	a := fyneapp.NewWithID("app.geocheats.native")
 	logo, _ := nativeAssets.ReadFile("geocheats.png")
 	nativedesktop.Setup(a, logo, "GeoCheats")
-	w := a.NewWindow("GeoCheats")
+	w := a.NewWindow("GeoCheats Mod Controller")
 	w.Resize(fyne.NewSize(540, 540))
 	ui := buildControls(w, s, nativepicker.System{})
 	w.SetContent(ui.root)
