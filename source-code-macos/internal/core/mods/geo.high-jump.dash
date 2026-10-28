@@ -1,0 +1,31 @@
+{
+  "schema": 2,
+  "targetSha256": "4eee06d5c2e2213b4ba2b1f6233dd426bbdd0e9b29d7c375e499516b6f8f69d5",
+  "format": "pe",
+  "arch": "amd64",
+  "status": "experimental / static-verified; gameplay test pending",
+  "id": "geo.high-jump",
+  "name": "High Jump",
+  "description": "Boosts the start of ordinary cube jumps by 2.2×. Other forms retain their normal controls.",
+  "kind": "field",
+  "effect": "high-jump",
+  "group": "vertical",
+  "guards": [
+    {
+      "rva": "0x503ea7",
+      "expectedHex": "48 8B 05 22 81 40 00"
+    },
+    {
+      "rva": "0x503eed",
+      "expectedHex": "48 89 B0 30 02 00 00"
+    },
+    {
+      "rva": "0x4ea5e3",
+      "expectedHex": "F2 0F 11 87 A8 09 00 00"
+    },
+    {
+      "rva": "0x4e8385",
+      "expectedHex": "F3 44 0F 10 99 FC 09 00 00"
+    }
+  ]
+}
